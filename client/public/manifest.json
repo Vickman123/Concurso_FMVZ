@@ -1,0 +1,21 @@
+{
+  "short_name": "Disfraces FMVZ",
+  "name": "Segundo Concurso de Disfraces FMVZ — UNAM",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "/icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#090B14",
+  "theme_color": "#090B14",
+  "display": "standalone",
+  "orientation": "portrait"
+}

@@ -1,0 +1,7 @@
+node_modules
+dist
+.env
+data/postgres_db
+server/data/postgres_db
+*.log
+.DS_Store

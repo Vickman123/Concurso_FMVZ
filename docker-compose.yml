@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: fmvz_halloween_db
+    restart: always
+    environment:
+      POSTGRES_DB: fmvz_halloween
+      POSTGRES_USER: fmvz_admin
+      POSTGRES_PASSWORD: fmvz_secure_password_2026
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fmvz_admin -d fmvz_halloween"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: fmvz_halloween_app
+    restart: always
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+      DATABASE_URL: postgres://fmvz_admin:fmvz_secure_password_2026@db:5432/fmvz_halloween
+      JWT_SECRET: fmvz_halloween_secret_unam_2026_super_secure_key
+    ports:
+      - "4000:4000"
+    volumes:
+      - uploads_data:/app/server/uploads
+
+volumes:
+  pgdata:
+  uploads_data:
