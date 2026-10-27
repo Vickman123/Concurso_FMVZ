@@ -1,6 +1,8 @@
 node_modules
 dist
 .env
+.env*
+server/.env*
 data/postgres_db
 server/data/postgres_db
 *.log

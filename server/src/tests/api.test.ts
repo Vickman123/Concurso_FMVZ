@@ -2,6 +2,7 @@ import assert from 'node:assert';
 import test, { describe } from 'node:test';
 import app from '../index';
 import { runSeed } from '../db/seed';
+import { closeDb } from '../db/connection';
 
 let server: any;
 const baseUrl = 'http://localhost:4003';
@@ -17,8 +18,9 @@ describe('FMVZ Halloween Backend API Test Suite', () => {
     });
   });
 
-  test.after(() => {
+  test.after(async () => {
     if (server) server.close();
+    await closeDb();
   });
 
   test('1. GET /api/contest/settings returns valid contest config', async () => {

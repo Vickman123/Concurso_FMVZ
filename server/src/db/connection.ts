@@ -1,7 +1,12 @@
 import path from 'path';
 import fs from 'fs';
+import dotenv from 'dotenv';
 import { Pool, PoolClient } from 'pg';
 import { PGlite } from '@electric-sql/pglite';
+
+dotenv.config();
+dotenv.config({ path: path.resolve(__dirname, '../../.env') });
+dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
 
 export interface QueryResult<T = any> {
   rows: T[];
@@ -116,4 +121,16 @@ export async function initDb(): Promise<void> {
   }
 
   isInitialized = true;
+}
+
+export async function closeDb(): Promise<void> {
+  if (pgPool) {
+    await pgPool.end();
+    pgPool = null;
+  }
+  if (pgliteInstance) {
+    await pgliteInstance.close();
+    pgliteInstance = null;
+  }
+  isInitialized = false;
 }

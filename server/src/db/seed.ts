@@ -157,8 +157,12 @@ export async function runSeed(): Promise<void> {
 
 // Allow direct CLI execution
 if (require.main === module) {
-  runSeed().catch(err => {
-    console.error('[Seed Error]:', err);
-    process.exit(1);
-  });
+  runSeed()
+    .then(() => {
+      process.exit(0);
+    })
+    .catch(err => {
+      console.error('[Seed Error]:', err);
+      process.exit(1);
+    });
 }
