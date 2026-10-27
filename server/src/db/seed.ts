@@ -130,6 +130,15 @@ export async function runSeed(): Promise<void> {
   fs.writeFileSync(csvFile, csvOutput, 'utf8');
   console.log(`[Seed] Exported reference CSV to ${csvFile}`);
 
+  // 6.5 Live Stage Session
+  await db.query(`
+    INSERT INTO live_stage_session (id, stage_status, current_participant_id, voting_seconds_left, total_cheers)
+    SELECT 1, 'waiting', id, 30, 0
+    FROM participants
+    WHERE contest_number = 1
+    ON CONFLICT (id) DO NOTHING;
+  `);
+
   // 7. Audit Log
   await db.query(`
     INSERT INTO audit_logs (admin_id, action, entity_type, entity_id, reason, metadata)

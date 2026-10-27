@@ -1,15 +1,16 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Users, Heart, Trophy } from 'lucide-react';
+import { Home, Users, Heart, PlusCircle, ShieldCheck } from 'lucide-react';
 
 export const BottomNav: React.FC = () => {
   const location = useLocation();
 
   const items = [
     { label: 'Inicio', path: '/', icon: Home },
-    { label: 'Participantes', path: '/participantes', icon: Users },
-    { label: 'Votar', path: '/votar', icon: Heart },
-    { label: 'Premios', path: '/premios', icon: Trophy },
+    { label: 'Galería', path: '/participantes', icon: Users },
+    { label: 'Votar', path: '/votar', icon: Heart, primary: true },
+    { label: 'Registrar', path: '/registrar', icon: PlusCircle },
+    { label: 'Admin', path: '/admin', icon: ShieldCheck },
   ];
 
   const isActive = (path: string) => {
@@ -18,8 +19,8 @@ export const BottomNav: React.FC = () => {
   };
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-40 md:hidden bg-[#0D0F1C]/95 backdrop-blur-lg border-t border-halloween-border/90 safe-bottom-nav">
-      <div className="flex items-center justify-around h-16 px-2">
+    <nav className="fixed bottom-0 left-0 right-0 z-40 md:hidden bg-[#080A12]/95 backdrop-blur-xl border-t border-[#282B47] safe-bottom-nav">
+      <div className="flex items-center justify-around h-16 px-1 max-w-lg mx-auto">
         {items.map((item) => {
           const Icon = item.icon;
           const active = isActive(item.path);
@@ -27,14 +28,26 @@ export const BottomNav: React.FC = () => {
             <Link
               key={item.path}
               to={item.path}
-              className={`flex flex-col items-center justify-center w-full py-1 transition-colors ${
-                active ? 'text-halloween-orange' : 'text-halloween-muted hover:text-halloween-lavender'
+              className={`flex flex-col items-center justify-center flex-1 py-1 transition-all ${
+                active
+                  ? 'text-halloween-orange font-bold'
+                  : 'text-halloween-muted hover:text-halloween-white'
               }`}
             >
-              <div className={`p-1 rounded-xl transition-all ${active ? 'bg-halloween-orange/15 scale-110' : ''}`}>
-                <Icon className={`w-5 h-5 ${active ? 'stroke-[2.5px] drop-shadow-[0_0_8px_rgba(255,116,23,0.5)]' : ''}`} />
+              <div
+                className={`p-1.5 rounded-xl transition-all ${
+                  item.primary && !active
+                    ? 'bg-halloween-orange/20 text-halloween-orange'
+                    : item.primary && active
+                    ? 'bg-halloween-orange text-white shadow-glow-orange scale-110'
+                    : active
+                    ? 'bg-halloween-orange/15 scale-105'
+                    : ''
+                }`}
+              >
+                <Icon className={`w-5 h-5 ${active ? 'stroke-[2.5px]' : 'stroke-[1.8px]'}`} />
               </div>
-              <span className={`text-[11px] mt-0.5 ${active ? 'font-bold' : 'font-medium'}`}>
+              <span className="text-[10px] mt-0.5 tracking-tight">
                 {item.label}
               </span>
             </Link>

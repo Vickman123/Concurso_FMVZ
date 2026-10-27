@@ -7,29 +7,33 @@ export default {
   theme: {
     extend: {
       colors: {
-        background: '#090B14',
+        background: '#080A12',
         surface: {
-          DEFAULT: '#141626',
+          DEFAULT: '#15182A',
+          secondary: '#101321',
           raised: '#1C1F38',
-          card: '#181A2F',
+          card: '#15182A',
           subtle: '#232742'
         },
         halloween: {
+          bg: '#080A12',
+          bgSecondary: '#101321',
+          surface: '#15182A',
           purple: {
             DEFAULT: '#8B5CF6',
-            light: '#A78BFA',
+            light: '#B79AFF',
             dark: '#6D28D9',
             glow: 'rgba(139, 92, 246, 0.25)',
           },
           orange: {
             DEFAULT: '#FF7417',
-            light: '#FF8F3D',
+            light: '#FF9A24',
             dark: '#E05A00',
             glow: 'rgba(255, 116, 23, 0.25)',
           },
-          white: '#F8F5F0',
-          lavender: '#C4B5FD',
-          muted: '#94A3B8',
+          white: '#F7F4F0',
+          lavender: '#B79AFF',
+          muted: '#A7ABC0',
           border: '#282B47',
           borderLight: '#383D66',
         }

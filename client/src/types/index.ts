@@ -11,6 +11,7 @@ export interface Participant {
   photo_thumbnail_key?: string;
   status: 'pending' | 'approved' | 'needs_correction' | 'rejected' | 'inactive';
   registration_folio?: string;
+  votes_count?: number;
   created_at: string;
   updated_at?: string;
 }

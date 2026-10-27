@@ -81,6 +81,30 @@ CREATE TABLE IF NOT EXISTS audit_logs (
   metadata JSONB
 );
 
+CREATE TABLE IF NOT EXISTS live_stage_session (
+  id INT PRIMARY KEY DEFAULT 1,
+  stage_status VARCHAR(50) NOT NULL DEFAULT 'waiting' CHECK (stage_status IN ('waiting', 'presenting', 'voting_open', 'voting_closed', 'podium')),
+  current_participant_id INT REFERENCES participants(id) ON DELETE SET NULL,
+  voting_seconds_left INT DEFAULT 30,
+  total_cheers INT DEFAULT 0,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS live_votes (
+  id SERIAL PRIMARY KEY,
+  voter_id INT REFERENCES voters(id) ON DELETE CASCADE,
+  participant_id INT REFERENCES participants(id) ON DELETE CASCADE,
+  vote_value VARCHAR(10) NOT NULL DEFAULT 'yes',
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT unique_live_voter_participant UNIQUE (voter_id, participant_id)
+);
+
+CREATE TABLE IF NOT EXISTS live_reactions (
+  id SERIAL PRIMARY KEY,
+  emoji VARCHAR(20) NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Indices for performance and concurrency
 CREATE INDEX IF NOT EXISTS idx_participants_contest_number ON participants(contest_number);
 CREATE INDEX IF NOT EXISTS idx_participants_status ON participants(status);
@@ -89,3 +113,6 @@ CREATE INDEX IF NOT EXISTS idx_voters_normalized ON voters(voter_type, normalize
 CREATE INDEX IF NOT EXISTS idx_votes_participant ON votes(participant_id);
 CREATE INDEX IF NOT EXISTS idx_votes_confirmation_folio ON votes(confirmation_folio);
 CREATE INDEX IF NOT EXISTS idx_audit_logs_timestamp ON audit_logs(timestamp DESC);
+CREATE INDEX IF NOT EXISTS idx_live_votes_participant ON live_votes(participant_id);
+CREATE INDEX IF NOT EXISTS idx_live_reactions_created ON live_reactions(created_at DESC);
+

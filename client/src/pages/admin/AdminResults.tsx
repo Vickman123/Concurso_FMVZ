@@ -34,7 +34,7 @@ export const AdminResults: React.FC = () => {
   const handleTogglePublication = async () => {
     const nextStatus = pubStatus === 'published' ? 'hidden' : 'published';
     const msg = nextStatus === 'published'
-      ? '¿Estás seguro de PUBLICAR los resultados oficiales para toda la comunidad UNAM?'
+      ? '¿Estás seguro de PUBLICAR los resultados oficiales para toda la comunidad FMVZ?'
       : '¿Deseas OCULTAR los resultados públicos del portal?';
 
     if (!confirm(msg)) return;

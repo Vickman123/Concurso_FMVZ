@@ -1,0 +1,86 @@
+<svg viewBox="0 0 500 160" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="c2Orange" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stopColor="#FFA033" />
+      <stop offset="60%" stopColor="#FF7417" />
+      <stop offset="100%" stopColor="#CC4400" />
+    </linearGradient>
+    <linearGradient id="c2NeonPurple" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stopColor="#C4B5FD" />
+      <stop offset="100%" stopColor="#8B5CF6" />
+    </linearGradient>
+    <radialGradient id="c2Glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stopColor="#8B5CF6" stopOpacity="0.45" />
+      <stop offset="100%" stopColor="#8B5CF6" stopOpacity="0" />
+    </radialGradient>
+    <filter id="c2Bloom" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="5" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+
+  <!-- Ambient Glow -->
+  <circle cx="80" cy="80" r="72" fill="url(#c2Glow)" />
+
+  <!-- Geometric / Low-Poly Pumpkin Symbol -->
+  <g id="pumpkin" filter="url(#c2Bloom)">
+    <!-- Pumpkin stem -->
+    <path d="M78 28 C80 20 86 18 92 22 C88 28 84 32 82 38 Z" fill="#8B5CF6" />
+
+    <!-- Outer Facets / Low-poly ribs -->
+    <!-- Left outer lobe -->
+    <polygon points="36,65 48,46 56,62 44,88 32,80" fill="#FF8526" />
+    <polygon points="32,80 44,88 42,108 28,100" fill="#E65500" />
+    <polygon points="42,108 44,88 60,118 48,124" fill="#8B5CF6" opacity="0.85" stroke="#C4B5FD" stroke-width="0.8" />
+
+    <!-- Center left lobe -->
+    <polygon points="48,46 68,38 72,62 56,62" fill="#FFA54A" />
+    <polygon points="56,62 72,62 66,92 44,88" fill="#FF7417" />
+    <polygon points="44,88 66,92 68,122 60,118" fill="#D94800" />
+
+    <!-- Center right lobe -->
+    <polygon points="68,38 88,38 86,62 72,62" fill="#FFA54A" />
+    <polygon points="72,62 86,62 88,92 66,92" fill="#FF7417" />
+    <polygon points="66,92 88,92 84,122 68,122" fill="#D94800" />
+
+    <!-- Right outer lobe -->
+    <polygon points="88,38 108,46 100,62 86,62" fill="#FFA54A" />
+    <polygon points="86,62 100,62 112,80 88,92" fill="#FF8526" />
+    <polygon points="88,92 112,80 124,100 110,108" fill="#E65500" />
+    <polygon points="88,92 110,108 104,124 84,122" fill="#8B5CF6" opacity="0.85" stroke="#C4B5FD" stroke-width="0.8" />
+
+    <!-- Carved Angular Eyes (Low-poly triangular cuts) -->
+    <polygon points="50,68 62,60 58,74" fill="#080A12" stroke="#B79AFF" stroke-width="1.2" />
+    <polygon points="98,68 86,60 90,74" fill="#080A12" stroke="#B79AFF" stroke-width="1.2" />
+
+    <!-- Carved Nose -->
+    <polygon points="74,75 80,68 82,75" fill="#080A12" />
+
+    <!-- Carved Angular Smile -->
+    <polygon points="48,92 60,98 68,92 76,98 84,92 92,98 104,92 96,104 88,100 80,108 72,100 64,104 56,100" fill="#080A12" stroke="#B79AFF" stroke-width="1.2" />
+  </g>
+
+  <!-- Typography: FMVZ DISFRACES (Sin UNAM) -->
+  <g id="typography" transform="translate(160, 0)">
+    <!-- Primary Title: FMVZ -->
+    <text x="0" y="78" font-family="'Outfit', 'Inter', system-ui, sans-serif" font-weight="900" font-size="52" fill="#F7F4F0" letter-spacing="1.5">
+      FMVZ
+    </text>
+
+    <!-- Disfraces Accent Pill -->
+    <rect x="156" y="44" width="144" height="34" rx="10" fill="#8B5CF6" fill-opacity="0.2" stroke="#8B5CF6" stroke-width="1.8" />
+    <text x="228" y="66" font-family="'Outfit', 'Inter', system-ui, sans-serif" font-weight="900" font-size="16" fill="#B79AFF" letter-spacing="2" text-anchor="middle">
+      DISFRACES
+    </text>
+
+    <!-- Subtitle / Descriptor -->
+    <text x="2" y="110" font-family="'Inter', system-ui, sans-serif" font-weight="600" font-size="16" fill="#FF9A24" letter-spacing="1">
+      ✦ SEGUNDO CONCURSO 2026
+    </text>
+
+    <!-- Micro tagline -->
+    <text x="2" y="132" font-family="'Inter', system-ui, sans-serif" font-weight="400" font-size="12" fill="#A7ABC0">
+      Arte, caracterización y comunidad universitaria
+    </text>
+  </g>
+</svg>

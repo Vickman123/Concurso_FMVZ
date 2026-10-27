@@ -57,7 +57,7 @@ export const AdminLogin: React.FC = () => {
               Panel Administrativo
             </h1>
             <p className="text-xs text-halloween-muted mt-1">
-              Segundo Concurso de Disfraces FMVZ — UNAM 2026
+              Segundo Concurso de Disfraces FMVZ 2026
             </p>
           </div>
 

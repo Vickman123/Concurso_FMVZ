@@ -37,11 +37,14 @@ app.use(express.urlencoded({ extended: true, limit: '5mb' }));
 const uploadsPath = path.resolve(__dirname, '../uploads');
 app.use('/uploads', express.static(uploadsPath));
 
+import liveRoutes from './routes/liveRoutes';
+
 // API Routes
 app.use('/api/contest', contestRoutes);
 app.use('/api/participants', participantRoutes);
 app.use('/api/vote', voteRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/live', liveRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

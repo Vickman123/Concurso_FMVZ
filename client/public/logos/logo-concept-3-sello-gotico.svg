@@ -1,0 +1,72 @@
+<svg viewBox="0 0 500 160" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="c3SilverPurple" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stopColor="#FFFFFF" />
+      <stop offset="35%" stopColor="#C4B5FD" />
+      <stop offset="70%" stopColor="#8B5CF6" />
+      <stop offset="100%" stopColor="#4C1D95" />
+    </linearGradient>
+    <linearGradient id="c3GoldOrange" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stopColor="#FFE0A3" />
+      <stop offset="100%" stopColor="#FF7417" />
+    </linearGradient>
+    <radialGradient id="c3Halo" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stopColor="#8B5CF6" stopOpacity="0.4" />
+      <stop offset="100%" stopColor="#8B5CF6" stopOpacity="0" />
+    </radialGradient>
+    <filter id="c3Drop" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="4" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+
+  <!-- Ambient Glow -->
+  <circle cx="80" cy="80" r="70" fill="url(#c3Halo)" />
+
+  <!-- Circular Gothic Seal / Emblem -->
+  <g id="gothicSeal" filter="url(#c3Drop)">
+    <!-- Outer concentric ring -->
+    <circle cx="80" cy="80" r="56" fill="none" stroke="url(#c3SilverPurple)" stroke-width="2.5" />
+    <circle cx="80" cy="80" r="50" fill="#0C0E1C" stroke="#282B47" stroke-width="1.2" />
+
+    <!-- Crown at top -->
+    <path d="M68 40 L72 32 L80 37 L88 32 L92 40 L88 44 L72 44 Z" fill="url(#c3GoldOrange)" />
+    <circle cx="72" cy="30" r="1.5" fill="#FFF2DC" />
+    <circle cx="80" cy="35" r="1.5" fill="#FFF2DC" />
+    <circle cx="88" cy="30" r="1.5" fill="#FFF2DC" />
+
+    <!-- Crescent Moon inside Seal -->
+    <path d="M80 50 A16 16 0 1 0 94 66 A14 14 0 1 1 80 50 Z" fill="url(#c3GoldOrange)" />
+
+    <!-- Stylized Bat Wings silhouette at bottom -->
+    <path d="M80 84 C76 80 66 74 54 82 C58 92 68 96 72 108 C76 98 78 96 80 96 C82 96 84 98 88 108 C92 96 102 92 106 82 C94 74 84 80 80 84 Z" fill="url(#c3SilverPurple)" />
+
+    <!-- Small Star Accents -->
+    <circle cx="48" cy="80" r="1.5" fill="#B79AFF" />
+    <circle cx="112" cy="80" r="1.5" fill="#B79AFF" />
+  </g>
+
+  <!-- Typography: FMVZ HALLOWEEN EXPERIENCE (Sin UNAM) -->
+  <g id="typography" transform="translate(160, 0)">
+    <!-- Primary Title: FMVZ -->
+    <text x="0" y="76" font-family="'Outfit', 'Inter', system-ui, sans-serif" font-weight="900" font-size="52" fill="#F7F4F0" letter-spacing="1.5">
+      FMVZ
+    </text>
+
+    <!-- Experience Badge -->
+    <rect x="156" y="44" width="168" height="34" rx="8" fill="#15182A" stroke="#8B5CF6" stroke-width="1.6" />
+    <text x="240" y="66" font-family="'Outfit', 'Inter', system-ui, sans-serif" font-weight="900" font-size="14" fill="#B79AFF" letter-spacing="2.5" text-anchor="middle">
+      EXPERIENCE
+    </text>
+
+    <!-- Subtitle / Descriptor -->
+    <text x="2" y="108" font-family="'Inter', system-ui, sans-serif" font-weight="700" font-size="16" fill="#FF7417" letter-spacing="2">
+      HALLOWEEN 2026
+    </text>
+
+    <!-- Micro tagline -->
+    <text x="2" y="130" font-family="'Inter', system-ui, sans-serif" font-weight="400" font-size="12" fill="#A7ABC0">
+      Segundo Concurso de Disfraces de Terror y Fantasía
+    </text>
+  </g>
+</svg>

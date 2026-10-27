@@ -11,7 +11,8 @@ import {
   LogOut,
   ExternalLink,
   Shield,
-  BarChart3
+  BarChart3,
+  Radio
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
@@ -27,6 +28,7 @@ export const AdminLayout: React.FC = () => {
 
   const navItems = [
     { label: 'Dashboard', path: '/admin', icon: LayoutDashboard },
+    { label: 'En Vivo (Kahoot)', path: '/admin/en-vivo', icon: Radio },
     { label: 'Participantes', path: '/admin/participantes', icon: Users },
     { label: 'Fotografías', path: '/admin/fotografias', icon: Camera },
     { label: 'Votos', path: '/admin/votos', icon: Heart },
@@ -49,8 +51,8 @@ export const AdminLayout: React.FC = () => {
           {/* Top Brand */}
           <div className="p-4 sm:p-5 border-b border-halloween-border/60 flex items-center justify-between">
             <Link to="/admin" className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-xl bg-halloween-purple flex items-center justify-center text-white shadow-glow-purple">
-                🎃
+              <div className="w-9 h-9 rounded-xl bg-[#15182A] border border-halloween-purple/40 flex items-center justify-center p-1 shadow-glow-purple">
+                <img src="/logos/pumpkin-concept2-clean.png" alt="FMVZ Admin" className="w-full h-full object-contain" />
               </div>
               <div>
                 <span className="font-display font-black text-sm text-white tracking-wider block">

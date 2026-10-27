@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Shield, Sparkles, Lock } from 'lucide-react';
-import { GlowingPumpkin } from './HalloweenDecorations';
+import { EventLogo } from './EventLogo';
 
 export const Footer: React.FC = () => {
   return (
@@ -10,17 +10,7 @@ export const Footer: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-10">
           {/* Identity Col */}
           <div className="md:col-span-2 space-y-4">
-            <div className="flex items-center gap-3">
-              <GlowingPumpkin className="w-8 h-8" />
-              <div>
-                <h3 className="font-display font-extrabold text-base text-halloween-white tracking-wide">
-                  SEGUNDO CONCURSO DE DISFRACES FMVZ
-                </h3>
-                <p className="text-xs text-halloween-lavender">
-                  Facultad de Medicina Veterinaria y Zootecnia · UNAM
-                </p>
-              </div>
-            </div>
+            <EventLogo size="md" />
             <p className="text-xs leading-relaxed max-w-md text-gray-400">
               Celebrando la creatividad, el arte y el espíritu universitario de nuestra comunidad.
               Evento oficial programado para el <strong className="text-halloween-white">3 de noviembre de 2026</strong>.
@@ -97,7 +87,7 @@ export const Footer: React.FC = () => {
         {/* Disclaimer Bottom bar */}
         <div className="pt-8 border-t border-halloween-border/40 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-gray-500">
           <p>
-            © 2026 FMVZ · UNAM. Concurso de Disfraces Universitario. Todos los derechos reservados.
+            © 2026 FMVZ. Segundo Concurso de Disfraces. Todos los derechos reservados.
           </p>
           <div className="flex items-center gap-2 text-[11px]">
             <Sparkles className="w-3.5 h-3.5 text-halloween-orange" />

@@ -21,6 +21,9 @@ import { VoteConfirmed } from './pages/VoteConfirmed';
 import { Prizes } from './pages/Prizes';
 import { Faq } from './pages/Faq';
 import { PrivacyNotice } from './pages/PrivacyNotice';
+import { LogoShowcase } from './pages/LogoShowcase';
+import { LiveProjector } from './pages/LiveProjector';
+import { LiveVoter } from './pages/LiveVoter';
 
 // Admin Pages
 import { AdminLayout } from './pages/admin/AdminLayout';
@@ -33,6 +36,7 @@ import { AdminResults } from './pages/admin/AdminResults';
 import { AdminPrizes } from './pages/admin/AdminPrizes';
 import { AdminSettings } from './pages/admin/AdminSettings';
 import { AdminAudit } from './pages/admin/AdminAudit';
+import { AdminLiveControl } from './pages/admin/AdminLiveControl';
 
 // Protected Route Guard for Admin
 const ProtectedAdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -57,12 +61,13 @@ const ProtectedAdminRoute: React.FC<{ children: React.ReactNode }> = ({ children
 const AppContent: React.FC = () => {
   const location = useLocation();
   const isAdminRoute = location.pathname.startsWith('/admin');
+  const isProjectorRoute = location.pathname.startsWith('/en-vivo') || location.pathname.startsWith('/proyector');
   const [qrModalOpen, setQrModalOpen] = useState(false);
 
   return (
     <div className="min-h-screen flex flex-col bg-background text-halloween-white">
-      {/* Public Navbar (hidden on admin pages) */}
-      {!isAdminRoute && <Navbar onOpenQr={() => setQrModalOpen(true)} />}
+      {/* Public Navbar (hidden on admin pages and projector visor) */}
+      {!isAdminRoute && !isProjectorRoute && <Navbar onOpenQr={() => setQrModalOpen(true)} />}
 
       <div className="flex-1">
         <Routes>
@@ -78,6 +83,12 @@ const AppContent: React.FC = () => {
           <Route path="/premios" element={<Prizes />} />
           <Route path="/preguntas-frecuentes" element={<Faq />} />
           <Route path="/aviso-de-privacidad" element={<PrivacyNotice />} />
+          <Route path="/logos" element={<LogoShowcase />} />
+
+          {/* Kahoot Live Contest & Auditorium Projector */}
+          <Route path="/en-vivo" element={<LiveProjector />} />
+          <Route path="/proyector" element={<LiveProjector />} />
+          <Route path="/votar/en-vivo" element={<LiveVoter />} />
 
           {/* Admin Login */}
           <Route path="/admin/login" element={<AdminLogin />} />
@@ -92,6 +103,7 @@ const AppContent: React.FC = () => {
             }
           >
             <Route index element={<AdminDashboard />} />
+            <Route path="en-vivo" element={<AdminLiveControl />} />
             <Route path="participantes" element={<AdminParticipants />} />
             <Route path="fotografias" element={<AdminPhotos />} />
             <Route path="votos" element={<AdminVotes />} />
@@ -106,8 +118,8 @@ const AppContent: React.FC = () => {
         </Routes>
       </div>
 
-      {/* Public Footer & Mobile Bottom Navigation */}
-      {!isAdminRoute && (
+      {/* Public Footer & Mobile Bottom Navigation (hidden on admin and projector visor) */}
+      {!isAdminRoute && !isProjectorRoute && (
         <>
           <Footer />
           <BottomNav />

@@ -8,8 +8,8 @@
 
 body {
   margin: 0;
-  background-color: #090B14;
-  color: #F8F5F0;
+  background-color: #080A12;
+  color: #F7F4F0;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -23,7 +23,7 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  background: #090B14;
+  background: #080A12;
 }
 
 ::-webkit-scrollbar-thumb {

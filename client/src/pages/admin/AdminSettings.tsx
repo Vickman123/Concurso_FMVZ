@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Sliders, QrCode, Download, Save, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { Sliders, QrCode, Download, Save, CheckCircle2, AlertTriangle, Sparkles } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { CustomQrWithLogo } from '../../components/CustomQrWithLogo';
 
 export const AdminSettings: React.FC = () => {
   const { token, admin } = useAuth();
@@ -157,44 +158,26 @@ export const AdminSettings: React.FC = () => {
           </form>
         </div>
 
-        {/* QR Code Poster Generator */}
+        {/* QR Code Poster Generator Personalizado */}
         <div className="glass-card rounded-3xl p-6 border border-halloween-purple/40 text-center space-y-4 shadow-glow-purple">
           <div className="w-12 h-12 mx-auto rounded-2xl bg-halloween-purple/20 text-halloween-lavender flex items-center justify-center">
             <QrCode className="w-6 h-6" />
           </div>
           <div>
             <h3 className="font-display font-bold text-lg text-white">
-              Código QR Oficial
+              Código QR Personalizado con Logo
             </h3>
             <p className="text-xs text-halloween-muted mt-1">
-              Para mamparas, carteles y proyección en el auditorio de la FMVZ.
+              Con logotipo de calabaza geométrica y alta tolerancia a errores. Ideal para mamparas, gafetes y proyección.
             </p>
           </div>
 
-          <div className="p-4 bg-white rounded-2xl inline-block mx-auto border-4 border-halloween-orange/60 shadow-inner">
-            {qrDataUrl ? (
-              <img src={qrDataUrl} alt="QR Concurso" className="w-48 h-48 mx-auto" />
-            ) : (
-              <div className="w-48 h-48 flex items-center justify-center text-gray-500 text-xs">
-                Cargando...
-              </div>
-            )}
-          </div>
-
-          <div className="font-mono text-[11px] text-halloween-lavender break-all px-2">
-            {window.location.origin}
-          </div>
-
-          {qrDataUrl && (
-            <a
-              href={qrDataUrl}
-              download="QR_Concurso_Disfraces_FMVZ_2026.png"
-              className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-halloween-orange to-amber-600 hover:from-halloween-orange-dark hover:to-halloween-orange shadow-glow-orange transition-all"
-            >
-              <Download className="w-4 h-4" />
-              <span>Descargar PNG de Alta Resolución</span>
-            </a>
-          )}
+          <CustomQrWithLogo
+            size={260}
+            showLogo={true}
+            logoSrc="/logos/pumpkin-concept2-clean.png"
+            showActions={true}
+          />
         </div>
       </div>
     </div>
