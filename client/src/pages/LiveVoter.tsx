@@ -482,15 +482,16 @@ export const LiveVoter: React.FC = () => {
                       className="w-full py-4 px-6 rounded-2xl font-display font-black text-lg text-white bg-gradient-to-r from-halloween-orange via-amber-500 to-halloween-orange shadow-glow-orange hover:brightness-110 active:scale-95 transition-all flex items-center justify-center gap-3 animate-bounce-subtle"
                     >
                       <ThumbsUp className="w-6 h-6" />
-                      <span>{votingLoading ? 'Registrando...' : '¡VOTAR POR ESTE DISFRAZ!'}</span>
+                      <span>{votingLoading ? 'Guardando Voto...' : '👍 Guardar Voto (Votar SÍ)'}</span>
                     </button>
 
                     <button
                       onClick={() => handleVote('no')}
                       disabled={votingLoading}
-                      className="w-full py-2.5 px-4 rounded-xl text-xs font-semibold text-gray-400 bg-surface-raised border border-halloween-border hover:text-white transition-colors"
+                      className="w-full py-3 px-4 rounded-xl text-xs sm:text-sm font-semibold text-gray-400 bg-surface-raised border border-halloween-border hover:text-white transition-colors flex items-center justify-center gap-2"
                     >
-                      No votar / Pasar al siguiente
+                      <XCircle className="w-4 h-4 text-gray-500" />
+                      <span>⛔ Pasar al Siguiente (No Votar)</span>
                     </button>
                   </div>
                 )}

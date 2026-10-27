@@ -16,6 +16,7 @@ import {
   CheckCircle2,
   ArrowRight,
   Tv,
+  XCircle,
 } from 'lucide-react';
 import { CustomQrWithLogo } from '../components/CustomQrWithLogo';
 import { EventLogo } from '../components/EventLogo';
@@ -73,6 +74,25 @@ export const LiveProjector: React.FC = () => {
   const [joinNotification, setJoinNotification] = useState<{ id: string; count: number } | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const previousClientsCountRef = useRef<number>(1);
+
+  // Voter state for direct voting on stage view
+  const [voter, setVoter] = useState<{ full_name: string; voter_type: 'student' | 'worker'; institutional_identifier: string } | null>(() => {
+    try {
+      const saved = localStorage.getItem('fmvz_voter');
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  });
+  const [hasVotedForCurrent, setHasVotedForCurrent] = useState(false);
+  const [currentVoteValue, setCurrentVoteValue] = useState<'yes' | 'no' | null>(null);
+  const [votingLoading, setVotingLoading] = useState(false);
+  const votedParticipantsRef = useRef<Set<number>>(new Set());
+
+  // Inline quick login if not yet identified
+  const [inlineVoterType, setInlineVoterType] = useState<'student' | 'worker'>('student');
+  const [inlineIdNumber, setInlineIdNumber] = useState('');
+  const [inlineAuthError, setInlineAuthError] = useState<string | null>(null);
 
   const voterUrl = `${window.location.origin}/votar/en-vivo`;
 
@@ -234,6 +254,81 @@ export const LiveProjector: React.FC = () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
   }, [state.stage_status, state.voting_seconds_left]);
+
+  // Reset vote state when stage participant changes
+  useEffect(() => {
+    if (state.current_participant?.id) {
+      const alreadyVoted = votedParticipantsRef.current.has(state.current_participant.id);
+      setHasVotedForCurrent(alreadyVoted);
+      if (!alreadyVoted) setCurrentVoteValue(null);
+    }
+  }, [state.current_participant?.id]);
+
+  const handleStageVote = async (value: 'yes' | 'no') => {
+    let activeVoter = voter;
+
+    if (!activeVoter) {
+      const cleanId = inlineIdNumber.replace(/\D/g, '');
+      if (inlineVoterType === 'student' && cleanId.length !== 9) {
+        setInlineAuthError('El número de cuenta de alumno debe tener 9 dígitos.');
+        return;
+      }
+      if (inlineVoterType === 'worker' && (cleanId.length < 6 || cleanId.length > 9)) {
+        setInlineAuthError('El identificador de profesor debe contener entre 6 y 9 dígitos.');
+        return;
+      }
+      setInlineAuthError(null);
+
+      const resolvedName = inlineVoterType === 'student' ? `Alumno (${cleanId})` : `Profesor (${cleanId})`;
+      activeVoter = {
+        full_name: resolvedName,
+        voter_type: inlineVoterType,
+        institutional_identifier: cleanId,
+      };
+      localStorage.setItem('fmvz_voter', JSON.stringify(activeVoter));
+      setVoter(activeVoter);
+    }
+
+    if (!activeVoter || !state.current_participant || votingLoading) return;
+
+    setVotingLoading(true);
+    try {
+      const res = await fetch('/api/live/vote', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          voter_type: activeVoter.voter_type,
+          institutional_identifier: activeVoter.institutional_identifier,
+          full_name: activeVoter.full_name,
+          vote: value,
+        }),
+      });
+
+      if (res.ok) {
+        votedParticipantsRef.current.add(state.current_participant.id);
+        setHasVotedForCurrent(true);
+        setCurrentVoteValue(value);
+
+        if (value === 'yes') {
+          try {
+            confetti({
+              particleCount: 50,
+              spread: 60,
+              origin: { y: 0.6 },
+              colors: ['#10B981', '#FF7417', '#8B5CF6'],
+            });
+          } catch {}
+        }
+      } else {
+        const err = await res.json().catch(() => ({}));
+        alert(err.message || 'La votación no está abierta en este momento.');
+      }
+    } catch {
+      alert('Error al registrar tu voto.');
+    } finally {
+      setVotingLoading(false);
+    }
+  };
 
   const launchPodiumConfetti = () => {
     try {
@@ -559,7 +654,7 @@ export const LiveProjector: React.FC = () => {
 
               {/* Voting Box with Timer or Results */}
               {state.stage_status === 'voting_open' ? (
-                <div className="glass-panel p-6 sm:p-8 rounded-3xl border-2 border-halloween-orange shadow-glow-orange space-y-6 bg-gradient-to-br from-[#1C130D] to-[#121528] animate-pulse">
+                <div className="glass-panel p-6 sm:p-8 rounded-3xl border-2 border-halloween-orange shadow-glow-orange space-y-5 bg-gradient-to-br from-[#1C130D] to-[#121528] animate-pulse">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <div className="w-12 h-12 rounded-2xl bg-halloween-orange/20 border border-halloween-orange text-halloween-orange flex items-center justify-center animate-spin-slow">
@@ -569,8 +664,8 @@ export const LiveProjector: React.FC = () => {
                         <span className="text-xs text-halloween-orange font-bold uppercase tracking-wider block">
                           ¡Votación Abierta!
                         </span>
-                        <strong className="text-2xl text-white font-display">
-                          Vota en tu celular ahora
+                        <strong className="text-xl sm:text-2xl text-white font-display">
+                          ¡Vota Ahora!
                         </strong>
                       </div>
                     </div>
@@ -592,7 +687,7 @@ export const LiveProjector: React.FC = () => {
                   </div>
 
                   {/* Real-time incoming vote counter */}
-                  <div className="flex items-center justify-between p-4 rounded-2xl bg-black/40 border border-halloween-border">
+                  <div className="flex items-center justify-between p-3.5 sm:p-4 rounded-2xl bg-black/40 border border-halloween-border">
                     <div className="flex items-center gap-2 text-halloween-white">
                       <ThumbsUp className="w-5 h-5 text-emerald-400" />
                       <span className="text-sm font-semibold">Votos recibidos en vivo:</span>
@@ -601,6 +696,143 @@ export const LiveProjector: React.FC = () => {
                       {state.current_votes.yes_count}
                     </span>
                   </div>
+
+                  {/* Direct Voting Buttons on Stage View */}
+                  {hasVotedForCurrent ? (
+                    <div className="p-4 rounded-2xl bg-emerald-950/40 border border-emerald-500/50 text-center space-y-1.5 animate-fade-in">
+                      <div className="flex items-center justify-center gap-2 text-emerald-400 font-display font-bold text-base sm:text-lg">
+                        <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
+                        <span>
+                          {currentVoteValue === 'yes'
+                            ? '¡Tu voto fue guardado con éxito!'
+                            : 'Decidiste pasar este disfraz'}
+                        </span>
+                      </div>
+                      <p className="text-xs text-halloween-lavender">
+                        {currentVoteValue === 'yes'
+                          ? 'Tu voto SÍ ha sido contabilizado para este participante.'
+                          : 'Se registró tu decisión sin sumar voto a este disfraz.'}
+                      </p>
+                    </div>
+                  ) : voter ? (
+                    <div className="space-y-3 pt-3 border-t border-halloween-border/70">
+                      <div className="flex items-center justify-between text-xs text-halloween-lavender">
+                        <span className="flex items-center gap-1.5">
+                          <span className="w-2 h-2 rounded-full bg-emerald-400" />
+                          Votando como:{' '}
+                          <strong className="text-white">
+                            {voter.voter_type === 'student' ? '🎓 Alumno' : '👨‍🏫 Profesor'} ({voter.institutional_identifier})
+                          </strong>
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            localStorage.removeItem('fmvz_voter');
+                            setVoter(null);
+                          }}
+                          className="text-[11px] text-halloween-orange hover:underline cursor-pointer"
+                        >
+                          Cambiar cuenta
+                        </button>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <button
+                          type="button"
+                          onClick={() => handleStageVote('yes')}
+                          disabled={votingLoading}
+                          className="py-3.5 px-4 rounded-2xl font-display font-black text-sm sm:text-base text-white bg-gradient-to-r from-halloween-orange via-amber-500 to-halloween-orange shadow-glow-orange hover:brightness-110 active:scale-95 transition-all flex items-center justify-center gap-2 animate-bounce-subtle cursor-pointer disabled:opacity-50"
+                        >
+                          <ThumbsUp className="w-5 h-5" />
+                          <span>{votingLoading ? 'Guardando...' : '👍 Guardar Voto (Votar SÍ)'}</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => handleStageVote('no')}
+                          disabled={votingLoading}
+                          className="py-3 px-4 rounded-2xl text-xs sm:text-sm font-semibold text-gray-300 bg-surface-raised border border-halloween-border hover:text-white hover:border-gray-500 transition-colors flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                        >
+                          <XCircle className="w-4 h-4 text-gray-400" />
+                          <span>⛔ Pasar al Siguiente (No Votar)</span>
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-3 pt-3 border-t border-halloween-border/70">
+                      <div className="text-xs text-halloween-lavender font-semibold">
+                        Identifícate con tu cuenta UNAM para votar en esta pantalla:
+                      </div>
+
+                      {inlineAuthError && (
+                        <div className="p-2.5 rounded-xl bg-red-900/40 border border-red-500/50 text-red-300 text-xs">
+                          {inlineAuthError}
+                        </div>
+                      )}
+
+                      {/* Alumno vs Profesor selection */}
+                      <div className="grid grid-cols-2 gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setInlineVoterType('student')}
+                          className={`py-2 px-3 rounded-xl text-xs font-bold border transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                            inlineVoterType === 'student'
+                              ? 'bg-halloween-orange text-black border-halloween-orange shadow-glow-orange'
+                              : 'bg-surface text-gray-400 border-halloween-border hover:text-white'
+                          }`}
+                        >
+                          <span>🎓 Alumno (9 dígitos)</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setInlineVoterType('worker')}
+                          className={`py-2 px-3 rounded-xl text-xs font-bold border transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                            inlineVoterType === 'worker'
+                              ? 'bg-halloween-orange text-black border-halloween-orange shadow-glow-orange'
+                              : 'bg-surface text-gray-400 border-halloween-border hover:text-white'
+                          }`}
+                        >
+                          <span>👨‍🏫 Profesor / Personal</span>
+                        </button>
+                      </div>
+
+                      {/* Account number input */}
+                      <div>
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          maxLength={9}
+                          value={inlineIdNumber}
+                          onChange={(e) => setInlineIdNumber(e.target.value.replace(/\D/g, ''))}
+                          placeholder={inlineVoterType === 'student' ? 'Ingresa tu número de cuenta (9 dígitos)' : 'Ingresa tu número de trabajador'}
+                          className="w-full px-3.5 py-2.5 rounded-xl bg-black/50 border border-halloween-border text-white placeholder-gray-500 font-mono text-sm focus:outline-none focus:border-halloween-orange focus:ring-1 focus:ring-halloween-orange"
+                        />
+                      </div>
+
+                      {/* Action buttons */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+                        <button
+                          type="button"
+                          onClick={() => handleStageVote('yes')}
+                          disabled={votingLoading || !inlineIdNumber}
+                          className="py-3 px-4 rounded-xl font-display font-black text-sm text-white bg-gradient-to-r from-halloween-orange via-amber-500 to-halloween-orange shadow-glow-orange hover:brightness-110 active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          <ThumbsUp className="w-4 h-4" />
+                          <span>{votingLoading ? 'Guardando...' : '👍 Guardar Voto (Votar SÍ)'}</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => handleStageVote('no')}
+                          disabled={votingLoading || !inlineIdNumber}
+                          className="py-2.5 px-3 rounded-xl text-xs font-semibold text-gray-300 bg-surface-raised border border-halloween-border hover:text-white transition-colors flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          <XCircle className="w-4 h-4 text-gray-400" />
+                          <span>⛔ Pasar al Siguiente (No Votar)</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               ) : state.stage_status === 'voting_closed' ? (
                 <div className="glass-panel p-6 sm:p-8 rounded-3xl border border-halloween-purple/50 shadow-glow-purple space-y-6">
@@ -711,7 +943,7 @@ export const LiveProjector: React.FC = () => {
         )}
       </main>
 
-      {/* Floating Bottom Footer with Permanent Audience QR */}
+      {/* Floating Bottom Footer */}
       <footer className="px-6 py-3 border-t border-halloween-border/60 bg-[#0A0D1B]/95 backdrop-blur-md flex items-center justify-between z-30">
         <div className="flex items-center gap-3">
           <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping hidden sm:block" />
@@ -725,24 +957,11 @@ export const LiveProjector: React.FC = () => {
           </div>
         </div>
 
-        {/* Mini QR Card for stage footer */}
-        <div className="flex items-center gap-3">
-          <div className="text-right hidden sm:block">
-            <span className="text-[10px] text-halloween-muted block uppercase tracking-wider font-bold">
-              Escanea con tu celular
-            </span>
-            <span className="font-mono text-xs text-halloween-orange font-bold">
-              {voterUrl}
-            </span>
-          </div>
-          <div className="p-1 bg-white rounded-xl shadow-md border-2 border-halloween-orange/60">
-            <CustomQrWithLogo
-              size={65}
-              showLogo={false}
-              showActions={false}
-              url={voterUrl}
-            />
-          </div>
+        <div className="flex items-center gap-2 text-xs text-halloween-muted">
+          <Users className="w-4 h-4 text-emerald-400" />
+          <span className="font-medium">
+            <strong className="text-emerald-400 font-mono">{state.connected_clients}</strong> conectados
+          </span>
         </div>
       </footer>
     </div>
