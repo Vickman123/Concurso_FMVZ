@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Search,
   Filter,
@@ -40,6 +40,47 @@ export const AdminParticipants: React.FC = () => {
   const [statusReason, setStatusReason] = useState<string>('');
   const [updatingStatus, setUpdatingStatus] = useState(false);
   const [copiedFolio, setCopiedFolio] = useState(false);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const photoInputRef = useRef<HTMLInputElement>(null);
+
+  const handleUploadPhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !selectedParticipant) return;
+    setUploadingPhoto(true);
+    try {
+      const formData = new FormData();
+      formData.append('photo', file);
+
+      const res = await fetch(`/api/admin/participants/${selectedParticipant.id}/photo`, {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      });
+
+      const data = await res.json();
+      if (res.ok && data.photo_url) {
+        setSelectedParticipant({
+          ...selectedParticipant,
+          photo_original_key: data.photo_url,
+          photo_thumbnail_key: data.photo_url,
+        });
+        setParticipants((prev) =>
+          prev.map((p) =>
+            p.id === selectedParticipant.id
+              ? { ...p, photo_original_key: data.photo_url }
+              : p
+          )
+        );
+      } else {
+        alert(data.error || 'Error al actualizar fotografía');
+      }
+    } catch (err) {
+      alert('Error de conexión al subir fotografía');
+    } finally {
+      setUploadingPhoto(false);
+      if (photoInputRef.current) photoInputRef.current.value = '';
+    }
+  };
 
   // CSV Import Modal
   const [showImportModal, setShowImportModal] = useState(false);
@@ -520,8 +561,31 @@ export const AdminParticipants: React.FC = () => {
                   </a>
                 </div>
                 <span className="text-[11px] text-gray-400 mt-2 text-center">
-                  Fotografía enviada por el concursante
+                  Fotografía del concursante
                 </span>
+
+                {/* Upload / Reemplazar foto permanente */}
+                <div className="w-full mt-3 flex flex-col gap-1.5">
+                  <input
+                    type="file"
+                    ref={photoInputRef}
+                    onChange={handleUploadPhoto}
+                    accept="image/jpeg,image/png,image/webp"
+                    className="hidden"
+                  />
+                  <button
+                    type="button"
+                    disabled={uploadingPhoto}
+                    onClick={() => photoInputRef.current?.click()}
+                    className="w-full py-2 px-3 rounded-xl text-xs font-semibold text-halloween-lavender bg-[#15182A] hover:bg-[#1E223D] border border-halloween-border hover:border-halloween-purple/50 flex items-center justify-center gap-2 transition-all disabled:opacity-50"
+                  >
+                    <Upload className="w-3.5 h-3.5 text-halloween-purple-light" />
+                    <span>{uploadingPhoto ? 'Guardando en Supabase...' : 'Subir / Reemplazar Foto'}</span>
+                  </button>
+                  <span className="text-[10px] text-gray-500 text-center">
+                    Se guarda permanentemente en la base de datos
+                  </span>
+                </div>
               </div>
 
               {/* Right Column: Participant Details */}

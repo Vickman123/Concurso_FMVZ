@@ -101,10 +101,11 @@ export async function registerParticipant(req: Request, res: Response): Promise<
     const data = parseResult.data;
     const normalizedId = normalizeIdentifier(data.institutional_identifier);
 
-    // Photo check
+    // Photo check & Base64 conversion (Stored permanently in Supabase)
     let photoPath = '/uploads/costume_default.svg';
-    if (req.file) {
-      photoPath = `/uploads/${req.file.filename}`;
+    if (req.file && req.file.buffer) {
+      const mime = req.file.mimetype || 'image/jpeg';
+      photoPath = `data:${mime};base64,${req.file.buffer.toString('base64')}`;
     } else {
       res.status(400).json({ error: 'Se requiere subir una fotografía del disfraz para completar el registro.' });
       return;

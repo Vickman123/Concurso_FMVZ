@@ -29,9 +29,9 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 
-// Body Parsers
-app.use(express.json({ limit: '5mb' }));
-app.use(express.urlencoded({ extended: true, limit: '5mb' }));
+// Body Parsers (Support rich Base64 image payloads stored in Supabase)
+app.use(express.json({ limit: '15mb' }));
+app.use(express.urlencoded({ extended: true, limit: '15mb' }));
 
 // Static uploads folder
 const uploadsPath = path.resolve(__dirname, '../uploads');

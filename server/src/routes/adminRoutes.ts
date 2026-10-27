@@ -16,7 +16,9 @@ import {
   updatePrizeCategory,
   getAuditLogs,
   generateQrCode,
+  updateParticipantPhoto,
 } from '../controllers/adminController';
+import { uploadCostumePhoto, validateImageMagicBytes } from '../middleware/upload';
 import { authenticate, requireAdmin } from '../middleware/auth';
 import { loginRateLimiter } from '../middleware/rateLimiter';
 
@@ -32,6 +34,7 @@ router.get('/me', getAdminMe);
 router.get('/stats', getDashboardStats);
 router.get('/participants', getAdminParticipants);
 router.patch('/participants/:id/status', updateParticipantStatus);
+router.patch('/participants/:id/photo', uploadCostumePhoto.single('photo'), validateImageMagicBytes, updateParticipantPhoto);
 router.get('/photos/pending', getPendingPhotos);
 router.get('/votes', getAdminVotes);
 router.get('/results', getAdminResults);

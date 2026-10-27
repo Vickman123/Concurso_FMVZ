@@ -528,3 +528,45 @@ export async function generateQrCode(req: Request, res: Response): Promise<void>
     res.status(500).json({ error: 'Error al generar código QR', details: err.message });
   }
 }
+
+export async function updateParticipantPhoto(req: Request, res: Response): Promise<void> {
+  try {
+    const id = parseInt(String(req.params.id), 10);
+    if (!req.file || !req.file.buffer) {
+      res.status(400).json({ error: 'No se recibió ningún archivo de imagen válido.' });
+      return;
+    }
+
+    const mime = req.file.mimetype || 'image/jpeg';
+    const photoDataUrl = `data:${mime};base64,${req.file.buffer.toString('base64')}`;
+
+    const db = await getDb();
+    const result = await db.query(
+      'UPDATE participants SET photo_original_key = $1, photo_thumbnail_key = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING id, contest_number, public_display_name',
+      [photoDataUrl, id]
+    );
+
+    if (result.rowCount === 0) {
+      res.status(404).json({ error: 'Participante no encontrado.' });
+      return;
+    }
+
+    // Audit log
+    await db.query(`
+      INSERT INTO audit_logs (admin_id, action, entity_type, entity_id, reason, metadata)
+      VALUES ($1, 'PARTICIPANT_PHOTO_UPDATED', 'participant', $2, 'Fotografía re-subida y guardada permanentemente en Base64', $3)
+    `, [
+      req.admin?.id,
+      String(id),
+      JSON.stringify({ contest_number: result.rows[0].contest_number })
+    ]);
+
+    res.json({
+      success: true,
+      message: 'Fotografía actualizada y almacenada permanentemente en Supabase.',
+      photo_url: photoDataUrl,
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: 'Error al actualizar fotografía', details: err.message });
+  }
+}
