@@ -15,7 +15,7 @@ export const CustomQrWithLogo: React.FC<CustomQrWithLogoProps> = ({
   url,
   size = 320,
   showLogo = true,
-  logoSrc = '/logos/pumpkin-concept2-clean.png',
+  logoSrc = '/logos/concurso-fmvz-square.jpg',
   showActions = true,
   className = '',
 }) => {

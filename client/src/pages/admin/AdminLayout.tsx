@@ -51,8 +51,8 @@ export const AdminLayout: React.FC = () => {
           {/* Top Brand */}
           <div className="p-4 sm:p-5 border-b border-halloween-border/60 flex items-center justify-between">
             <Link to="/admin" className="flex items-center gap-2.5">
-              <div className="w-9 h-9 rounded-xl bg-[#15182A] border border-halloween-purple/40 flex items-center justify-center p-1 shadow-glow-purple">
-                <img src="/logos/pumpkin-concept2-clean.png" alt="FMVZ Admin" className="w-full h-full object-contain" />
+              <div className="w-10 h-10 rounded-xl bg-[#15182A] border border-halloween-purple/40 flex items-center justify-center overflow-hidden shadow-glow-purple">
+                <img src="/logos/concurso-fmvz-square.jpg" alt="FMVZ Admin" className="w-full h-full object-cover" />
               </div>
               <div>
                 <span className="font-display font-black text-sm text-white tracking-wider block">

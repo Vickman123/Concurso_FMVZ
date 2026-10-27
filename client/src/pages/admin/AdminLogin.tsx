@@ -50,8 +50,8 @@ export const AdminLogin: React.FC = () => {
 
         <div className="glass-panel rounded-3xl p-8 border border-halloween-purple/40 shadow-glow-purple space-y-6">
           <div className="text-center">
-            <div className="w-14 h-14 rounded-2xl bg-halloween-purple/20 text-halloween-purple-light flex items-center justify-center mx-auto mb-3 border border-halloween-purple/40 shadow-md">
-              <Lock className="w-7 h-7" />
+            <div className="w-16 h-16 rounded-2xl bg-[#15182A] flex items-center justify-center mx-auto mb-3 border border-halloween-purple/40 shadow-glow-purple overflow-hidden">
+              <img src="/logos/concurso-fmvz-square.jpg" alt="FMVZ Admin" className="w-full h-full object-cover" />
             </div>
             <h1 className="font-display font-black text-2xl text-white">
               Panel Administrativo

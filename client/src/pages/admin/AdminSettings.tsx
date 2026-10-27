@@ -199,7 +199,7 @@ export const AdminSettings: React.FC = () => {
           <CustomQrWithLogo
             size={260}
             showLogo={true}
-            logoSrc="/logos/pumpkin-concept2-clean.png"
+            logoSrc="/logos/concurso-fmvz-square.jpg"
             showActions={true}
           />
         </div>
