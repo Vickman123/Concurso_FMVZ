@@ -92,8 +92,10 @@ export async function initDb(): Promise<void> {
   const dbUrl = process.env.DATABASE_URL;
   if (dbUrl) {
     console.log('[DB] Connecting to PostgreSQL via DATABASE_URL...');
+    const isSsl = dbUrl.includes('supabase') || dbUrl.includes('neon') || dbUrl.includes('sslmode=require') || process.env.NODE_ENV === 'production';
     pgPool = new Pool({
       connectionString: dbUrl,
+      ssl: isSsl ? { rejectUnauthorized: false } : undefined,
       max: 25,
       idleTimeoutMillis: 30000,
       connectionTimeoutMillis: 5000,
