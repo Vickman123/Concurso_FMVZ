@@ -345,23 +345,142 @@ export async function getAdminVotes(req: Request, res: Response): Promise<void> 
     const db = await getDb();
     const result = await db.query(`
       SELECT 
+        'live' as vote_source,
+        lv.id,
+        CONCAT('LIVE-', LPAD(lv.id::text, 5, '0')) as confirmation_folio,
+        lv.vote_value,
+        lv.created_at,
+        'valid' as status,
+        p.contest_number as participant_number,
+        p.costume_title,
+        p.public_display_name,
+        vt.voter_type,
+        vt.normalized_identifier,
+        vt.full_name as voter_name
+      FROM live_votes lv
+      JOIN participants p ON lv.participant_id = p.id
+      JOIN voters vt ON lv.voter_id = vt.id
+
+      UNION ALL
+
+      SELECT 
+        'web' as vote_source,
         v.id,
         v.confirmation_folio,
+        'yes' as vote_value,
         v.created_at,
         v.status,
         p.contest_number as participant_number,
         p.costume_title,
         p.public_display_name,
-        vt.voter_type
+        vt.voter_type,
+        vt.normalized_identifier,
+        vt.full_name as voter_name
       FROM votes v
       JOIN participants p ON v.participant_id = p.id
       JOIN voters vt ON v.voter_id = vt.id
-      ORDER BY v.created_at DESC
+
+      ORDER BY created_at DESC
     `);
 
-    res.json({ votes: result.rows, total: result.rowCount });
+    const votes = result.rows;
+    const liveTotal = votes.filter(v => v.vote_source === 'live').length;
+    const webTotal = votes.filter(v => v.vote_source === 'web').length;
+    const yesTotal = votes.filter(v => v.vote_value === 'yes').length;
+    const noTotal = votes.filter(v => v.vote_value === 'no').length;
+    const studentTotal = votes.filter(v => v.voter_type === 'student').length;
+    const workerTotal = votes.filter(v => v.voter_type === 'worker').length;
+
+    res.json({
+      votes,
+      total: result.rowCount,
+      summary: {
+        total: result.rowCount,
+        live_total: liveTotal,
+        web_total: webTotal,
+        yes_total: yesTotal,
+        no_total: noTotal,
+        student_total: studentTotal,
+        worker_total: workerTotal,
+      }
+    });
   } catch (err: any) {
     res.status(500).json({ error: 'Error al consultar registro de votos', details: err.message });
+  }
+}
+
+export async function exportVotesCsv(req: Request, res: Response): Promise<void> {
+  try {
+    const db = await getDb();
+    const result = await db.query(`
+      SELECT 
+        'live' as vote_source,
+        lv.id,
+        CONCAT('LIVE-', LPAD(lv.id::text, 5, '0')) as confirmation_folio,
+        lv.vote_value,
+        lv.created_at,
+        'valid' as status,
+        p.contest_number as participant_number,
+        p.costume_title,
+        p.public_display_name,
+        vt.voter_type,
+        vt.normalized_identifier,
+        vt.full_name as voter_name
+      FROM live_votes lv
+      JOIN participants p ON lv.participant_id = p.id
+      JOIN voters vt ON lv.voter_id = vt.id
+
+      UNION ALL
+
+      SELECT 
+        'web' as vote_source,
+        v.id,
+        v.confirmation_folio,
+        'yes' as vote_value,
+        v.created_at,
+        v.status,
+        p.contest_number as participant_number,
+        p.costume_title,
+        p.public_display_name,
+        vt.voter_type,
+        vt.normalized_identifier,
+        vt.full_name as voter_name
+      FROM votes v
+      JOIN participants p ON v.participant_id = p.id
+      JOIN voters vt ON v.voter_id = vt.id
+
+      ORDER BY created_at DESC
+    `);
+
+    // Format rows with friendly Spanish headers and timestamps for Excel
+    const formattedRows = result.rows.map((r, idx) => {
+      const isLive = r.vote_source === 'live';
+      const voterTypeLabel = r.voter_type === 'student' ? 'Alumno' : 'Profesor / Personal';
+      const voteValueLabel = r.vote_value === 'yes' ? 'VOTO A FAVOR (SÍ)' : 'NO VOTÓ (PASÓ)';
+      const dateStr = new Date(r.created_at).toLocaleString('es-MX', { timeZone: 'America/Mexico_City' });
+
+      return {
+        '#': idx + 1,
+        'Folio de Auditoría': r.confirmation_folio,
+        'Modalidad': isLive ? 'En Vivo (Kahoot)' : 'Web Tradicional',
+        'Tipo de Votante': voterTypeLabel,
+        'Número de Cuenta / Identificador': r.normalized_identifier,
+        'Nombre Registrado': r.voter_name || 'N/A',
+        'No. Participante': `#${String(r.participant_number).padStart(2, '0')}`,
+        'Disfraz Votado': r.costume_title,
+        'Concursante': r.public_display_name,
+        'Calificación / Voto': voteValueLabel,
+        'Estado': r.status === 'valid' ? 'Válido' : r.status,
+        'Fecha y Hora (CDMX)': dateStr,
+      };
+    });
+
+    const csvOutput = stringify(formattedRows, { header: true, bom: true });
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', 'attachment; filename="auditoria_votos_fmvz_halloween.csv"');
+    res.send(csvOutput);
+  } catch (err: any) {
+    res.status(500).json({ error: 'Error al exportar auditoría de votos a CSV', details: err.message });
   }
 }
 

@@ -53,10 +53,12 @@ export async function checkVoterEligibility(req: Request, res: Response): Promis
       ? `******${normalizedId.slice(-3)}`
       : `***${normalizedId.slice(-3)}`;
 
+    const resolvedName = full_name?.trim() || (voter_type === 'student' ? `Alumno (${normalizedId})` : `Profesor (${normalizedId})`);
+
     res.json({
       eligible: true,
       voter: {
-        full_name: full_name.trim(),
+        full_name: resolvedName,
         voter_type,
         institutional_identifier_masked: masked,
       }
@@ -103,12 +105,13 @@ export async function castVote(req: Request, res: Response): Promise<void> {
       const participant = partRes.rows[0];
 
       // 3. Insert or retrieve voter record
+      const resolvedName = full_name?.trim() || (voter_type === 'student' ? `Alumno (${normalizedId})` : `Profesor (${normalizedId})`);
       let voterRes = await client.query(`
         INSERT INTO voters (full_name, voter_type, normalized_identifier)
         VALUES ($1, $2, $3)
         ON CONFLICT (voter_type, normalized_identifier) DO NOTHING
         RETURNING id
-      `, [full_name.trim(), voter_type, normalizedId]);
+      `, [resolvedName, voter_type, normalizedId]);
 
       let voterId: number;
       if (voterRes.rowCount === 0) {

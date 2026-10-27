@@ -35,8 +35,7 @@ export const LiveVoter: React.FC = () => {
     }
   });
 
-  // Login form state if not identified
-  const [fullName, setFullName] = useState('');
+  // Login form state if not identified (only community type and account number)
   const [voterType, setVoterType] = useState<'student' | 'worker'>('student');
   const [idNumber, setIdNumber] = useState('');
   const [authError, setAuthError] = useState<string | null>(null);
@@ -114,27 +113,25 @@ export const LiveVoter: React.FC = () => {
     }
   };
 
-  // Voter registration / sign-in with join animation
+  // Voter registration / sign-in with join animation (only account number and profile)
   const handleIdentify = (e: React.FormEvent) => {
     e.preventDefault();
     setAuthError(null);
 
     const cleanId = idNumber.replace(/\D/g, '');
     if (voterType === 'student' && cleanId.length !== 9) {
-      setAuthError('El número de cuenta UNAM debe contener exactamente 9 dígitos.');
+      setAuthError('El número de cuenta UNAM de alumno debe contener exactamente 9 dígitos.');
       return;
     }
-    if (voterType === 'worker' && cleanId.length !== 6) {
-      setAuthError('El número de trabajador/nómina debe contener exactamente 6 dígitos.');
-      return;
-    }
-    if (!fullName.trim()) {
-      setAuthError('Ingresa tu nombre para identificarte en el evento.');
+    if (voterType === 'worker' && (cleanId.length < 6 || cleanId.length > 9)) {
+      setAuthError('El identificador o cuenta de profesor debe contener entre 6 y 9 dígitos.');
       return;
     }
 
+    const resolvedName = voterType === 'student' ? `Alumno (${cleanId})` : `Profesor (${cleanId})`;
+
     const newVoter: StoredVoter = {
-      full_name: fullName.trim(),
+      full_name: resolvedName,
       voter_type: voterType,
       institutional_identifier: cleanId,
     };
@@ -290,7 +287,7 @@ export const LiveVoter: React.FC = () => {
               Identifícate para Votar
             </h1>
             <p className="text-xs text-halloween-muted mt-1">
-              Ingresa tus datos una sola vez para calificar en tiempo real cada disfraz en el auditorio.
+              Selecciona si eres Alumno o Profesor e ingresa tu número de cuenta para calificar en tiempo real en la pasarela.
             </p>
           </div>
 
@@ -304,68 +301,61 @@ export const LiveVoter: React.FC = () => {
 
             <form onSubmit={handleIdentify} className="space-y-4 text-xs">
               <div>
-                <label className="block text-gray-300 font-semibold mb-1">
-                  Tu nombre completo
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Ej. Sofía Hernández"
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl bg-surface-raised border border-halloween-border text-white text-xs sm:text-sm focus:outline-none focus:border-halloween-purple"
-                />
-              </div>
-
-              <div>
-                <label className="block text-gray-300 font-semibold mb-1">
-                  Tipo de comunidad
+                <label className="block text-gray-300 font-semibold mb-1.5">
+                  ¿Eres Alumno o Profesor?
                 </label>
                 <div className="grid grid-cols-2 gap-2">
                   <button
                     type="button"
-                    onClick={() => setVoterType('student')}
-                    className={`py-2.5 rounded-xl text-xs font-bold border transition-all ${
+                    onClick={() => { setVoterType('student'); setAuthError(null); }}
+                    className={`py-3 rounded-xl text-xs font-bold border transition-all flex flex-col items-center justify-center gap-1 ${
                       voterType === 'student'
-                        ? 'bg-halloween-orange/20 border-halloween-orange text-halloween-orange shadow-sm'
-                        : 'bg-surface-raised border-halloween-border text-gray-400'
+                        ? 'bg-halloween-orange/20 border-halloween-orange text-halloween-orange shadow-glow-orange scale-[1.02]'
+                        : 'bg-surface-raised border-halloween-border text-gray-400 hover:text-white'
                     }`}
                   >
-                    Estudiante (9 dígitos)
+                    <span className="text-base">🎓</span>
+                    <span>Alumno FMVZ</span>
                   </button>
                   <button
                     type="button"
-                    onClick={() => setVoterType('worker')}
-                    className={`py-2.5 rounded-xl text-xs font-bold border transition-all ${
+                    onClick={() => { setVoterType('worker'); setAuthError(null); }}
+                    className={`py-3 rounded-xl text-xs font-bold border transition-all flex flex-col items-center justify-center gap-1 ${
                       voterType === 'worker'
-                        ? 'bg-halloween-purple/20 border-halloween-purple text-halloween-lavender shadow-sm'
-                        : 'bg-surface-raised border-halloween-border text-gray-400'
+                        ? 'bg-halloween-purple/20 border-halloween-purple text-halloween-lavender shadow-glow-purple scale-[1.02]'
+                        : 'bg-surface-raised border-halloween-border text-gray-400 hover:text-white'
                     }`}
                   >
-                    Trabajador (6 dígitos)
+                    <span className="text-base">👨‍🏫</span>
+                    <span>Profesor / Personal</span>
                   </button>
                 </div>
               </div>
 
               <div>
                 <label className="block text-gray-300 font-semibold mb-1">
-                  {voterType === 'student' ? 'Número de cuenta (9 dígitos)' : 'Identificador de nómina (6 dígitos)'}
+                  {voterType === 'student' ? 'Número de cuenta UNAM (9 dígitos)' : 'Número de cuenta o nómina (6 a 9 dígitos)'}
                 </label>
                 <input
                   type="text"
                   required
-                  maxLength={voterType === 'student' ? 9 : 6}
-                  placeholder={voterType === 'student' ? '318294012' : '482019'}
+                  maxLength={9}
+                  placeholder={voterType === 'student' ? 'Ej. 318294012' : 'Ej. 482019'}
                   value={idNumber}
                   onChange={(e) => setIdNumber(e.target.value.replace(/\D/g, ''))}
-                  className="w-full px-4 py-3 rounded-xl bg-surface-raised border border-halloween-border text-white font-mono text-xs sm:text-sm focus:outline-none focus:border-halloween-purple"
+                  className="w-full px-4 py-3.5 rounded-xl bg-surface-raised border border-halloween-border text-white font-mono text-sm focus:outline-none focus:border-halloween-orange text-center tracking-wider"
                 />
+                <span className="text-[11px] text-halloween-muted block mt-1 text-center">
+                  {voterType === 'student'
+                    ? 'Ingresa tu número de cuenta de 9 dígitos sin guiones ni espacios'
+                    : 'Ingresa tu número de nómina o cuenta UNAM'}
+                </span>
               </div>
 
               <button
                 type="submit"
                 disabled={justJoined}
-                className="w-full py-3.5 rounded-xl font-bold text-sm text-white bg-gradient-to-r from-halloween-orange to-amber-600 hover:from-halloween-orange-dark hover:to-halloween-orange shadow-glow-orange transition-all flex items-center justify-center gap-2"
+                className="w-full py-4 rounded-xl font-bold text-sm text-white bg-gradient-to-r from-halloween-orange to-amber-600 hover:from-halloween-orange-dark hover:to-halloween-orange shadow-glow-orange transition-all flex items-center justify-center gap-2 active:scale-95 mt-2"
               >
                 <span>{justJoined ? '¡Conectando al auditorio...!' : '🎃 Entrar al Concurso en Vivo'}</span>
                 <ArrowRight className="w-4 h-4" />
@@ -394,9 +384,12 @@ export const LiveVoter: React.FC = () => {
             <span className="hidden sm:inline">Pantalla</span>
           </a>
 
-          <div className="px-2.5 py-1 rounded-full bg-surface-raised border border-halloween-border text-[11px] text-gray-300 flex items-center gap-1.5">
+          <div className="px-2.5 py-1 rounded-full bg-surface-raised border border-halloween-border text-[11px] text-gray-300 flex items-center gap-1.5 font-mono">
             <User className="w-3 h-3 text-halloween-orange" />
-            <span className="truncate max-w-[90px]">{voter.full_name.split(' ')[0]}</span>
+            <span className="truncate max-w-[120px]">
+              {voter.voter_type === 'student' ? '🎓 ' : '👨‍🏫 '}
+              {voter.institutional_identifier}
+            </span>
           </div>
 
           <button

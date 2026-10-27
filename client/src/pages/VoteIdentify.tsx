@@ -11,7 +11,6 @@ export const VoteIdentify: React.FC = () => {
   const { voterIdentity, setVoterIdentity, isVotingOpen, isLiveActive } = useContest();
 
   const [voterType, setVoterType] = useState<'student' | 'worker'>('student');
-  const [fullName, setFullName] = useState(voterIdentity?.full_name || '');
   const [identifier, setIdentifier] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -20,20 +19,17 @@ export const VoteIdentify: React.FC = () => {
     e.preventDefault();
     setError(null);
 
-    if (!fullName.trim() || fullName.trim().length < 3) {
-      setError('Por favor ingresa tu nombre completo');
+    const cleanId = identifier.replace(/\s+/g, '');
+    if (voterType === 'student' && !/^\d{9}$/.test(cleanId)) {
+      setError('El número de cuenta de alumno debe tener exactamente 9 dígitos');
+      return;
+    }
+    if (voterType === 'worker' && !/^\d{6,9}$/.test(cleanId)) {
+      setError('El número de cuenta o nómina de profesor debe tener entre 6 y 9 dígitos');
       return;
     }
 
-    const cleanId = identifier.replace(/\s+/g, '');
-    if (voterType === 'student' && !/^\d{9}$/.test(cleanId)) {
-      setError('El número de cuenta de estudiante debe tener exactamente 9 dígitos');
-      return;
-    }
-    if (voterType === 'worker' && !/^\d{6}$/.test(cleanId)) {
-      setError('El identificador de trabajador debe tener exactamente 6 dígitos');
-      return;
-    }
+    const resolvedName = voterType === 'student' ? `Alumno (${cleanId})` : `Profesor (${cleanId})`;
 
     setLoading(true);
     try {
@@ -41,7 +37,7 @@ export const VoteIdentify: React.FC = () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          full_name: fullName.trim(),
+          full_name: resolvedName,
           voter_type: voterType,
           institutional_identifier: cleanId,
         }),
@@ -54,7 +50,7 @@ export const VoteIdentify: React.FC = () => {
 
       // Save valid identity in session
       setVoterIdentity({
-        full_name: fullName.trim(),
+        full_name: resolvedName,
         voter_type: voterType,
         institutional_identifier: cleanId,
         institutional_identifier_masked: data.voter.institutional_identifier_masked,
@@ -163,51 +159,39 @@ export const VoteIdentify: React.FC = () => {
                     : 'text-halloween-muted hover:text-white'
                 }`}
               >
-                🎓 Estudiante
+                🎓 Alumno FMVZ
               </button>
               <button
                 type="button"
                 onClick={() => { setVoterType('worker'); setError(null); }}
                 className={`py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all ${
                   voterType === 'worker'
-                    ? 'bg-halloween-orange text-white shadow-glow-orange'
+                    ? 'bg-halloween-purple text-white shadow-glow-purple'
                     : 'text-halloween-muted hover:text-white'
                 }`}
               >
-                💼 Trabajador
+                👨‍🏫 Profesor / Personal
               </button>
             </div>
-          </div>
-
-          {/* Full name */}
-          <div>
-            <label className="block text-xs font-semibold text-gray-300 mb-1.5">
-              Nombre completo
-            </label>
-            <input
-              type="text"
-              value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
-              placeholder="Ingresa tu nombre y apellidos"
-              className="w-full px-4 py-3 rounded-xl bg-surface-raised border border-halloween-border text-sm text-halloween-white placeholder-halloween-muted focus:outline-none focus:border-halloween-orange"
-            />
           </div>
 
           {/* Identifier */}
           <div>
             <label className="block text-xs font-semibold text-gray-300 mb-1.5">
-              {voterType === 'student' ? 'Número de cuenta UNAM (9 dígitos)' : 'Identificador de trabajador (6 dígitos)'}
+              {voterType === 'student' ? 'Número de cuenta UNAM (9 dígitos)' : 'Número de cuenta o nómina (6 a 9 dígitos)'}
             </label>
             <input
               type="text"
-              maxLength={voterType === 'student' ? 9 : 6}
+              maxLength={9}
               value={identifier}
               onChange={(e) => setIdentifier(e.target.value.replace(/\D/g, ''))}
-              placeholder={voterType === 'student' ? '123456789' : '123456'}
-              className="w-full px-4 py-3 rounded-xl bg-surface-raised border border-halloween-border text-sm font-mono text-halloween-white placeholder-halloween-muted focus:outline-none focus:border-halloween-orange"
+              placeholder={voterType === 'student' ? 'Ej. 318294012' : 'Ej. 482019'}
+              className="w-full px-4 py-3 rounded-xl bg-surface-raised border border-halloween-border text-sm font-mono text-halloween-white placeholder-halloween-muted focus:outline-none focus:border-halloween-orange text-center tracking-wider"
             />
-            <span className="text-[11px] text-halloween-muted mt-1 block">
-              Se utiliza exclusivamente para verificar que no exista un voto duplicado.
+            <span className="text-[11px] text-halloween-muted mt-1 block text-center">
+              {voterType === 'student'
+                ? 'Ingresa tu número de cuenta UNAM sin guiones ni espacios'
+                : 'Ingresa tu número de nómina o cuenta UNAM'}
             </span>
           </div>
 

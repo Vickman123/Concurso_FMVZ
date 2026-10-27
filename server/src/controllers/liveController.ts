@@ -379,6 +379,8 @@ export async function castLiveVote(req: Request, res: Response): Promise<void> {
       return;
     }
 
+    const resolvedName = full_name?.trim() || (voter_type === 'student' ? `Alumno (${normalizedId})` : `Profesor (${normalizedId})`);
+
     // Upsert voter
     let voterId: number;
     const voterRes = await db.query(
@@ -391,7 +393,7 @@ export async function castLiveVote(req: Request, res: Response): Promise<void> {
     } else {
       const newVoter = await db.query(
         'INSERT INTO voters (full_name, voter_type, normalized_identifier) VALUES ($1, $2, $3) RETURNING id',
-        [full_name ? full_name.trim() : 'Miembro FMVZ', voter_type, normalizedId]
+        [resolvedName, voter_type, normalizedId]
       );
       voterId = newVoter.rows[0].id;
     }

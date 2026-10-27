@@ -27,9 +27,9 @@ export const participantRegistrationSchema = z.object({
 });
 
 export const voterIdentificationSchema = z.object({
-  full_name: z.string().trim().min(3, 'Ingresa tu nombre completo').max(200),
+  full_name: z.string().trim().optional(),
   voter_type: z.enum(['student', 'worker'], {
-    errorMap: () => ({ message: 'Selecciona si eres Estudiante o Trabajador' })
+    errorMap: () => ({ message: 'Selecciona si eres Alumno o Profesor' })
   }),
   institutional_identifier: z.string().trim()
 }).refine((data) => {
@@ -37,15 +37,15 @@ export const voterIdentificationSchema = z.object({
   if (data.voter_type === 'student') {
     return /^\d{9}$/.test(normalized);
   } else {
-    return /^\d{6}$/.test(normalized);
+    return /^\d{6,9}$/.test(normalized);
   }
 }, {
-  message: 'El identificador institucional debe ser de exactamente 9 dígitos para Estudiantes o 6 dígitos para Trabajadores',
+  message: 'El número de cuenta debe contener exactamente 9 dígitos para Alumnos (o de 6 a 9 para Profesores)',
   path: ['institutional_identifier'],
 });
 
 export const voteSubmissionSchema = z.object({
-  full_name: z.string().trim().min(3, 'Ingresa tu nombre completo').max(200),
+  full_name: z.string().trim().optional(),
   voter_type: z.enum(['student', 'worker']),
   institutional_identifier: z.string().trim(),
   participant_number: z.number().int().positive('Número de participante inválido'),
@@ -54,10 +54,10 @@ export const voteSubmissionSchema = z.object({
   if (data.voter_type === 'student') {
     return /^\d{9}$/.test(normalized);
   } else {
-    return /^\d{6}$/.test(normalized);
+    return /^\d{6,9}$/.test(normalized);
   }
 }, {
-  message: 'Identificador institucional inválido (9 dígitos para estudiante, 6 para trabajador)',
+  message: 'Número de cuenta inválido (9 dígitos para alumno, de 6 a 9 para profesor)',
   path: ['institutional_identifier'],
 });
 

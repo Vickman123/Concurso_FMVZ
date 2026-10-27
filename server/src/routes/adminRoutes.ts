@@ -10,6 +10,7 @@ import {
   importParticipantsCsv,
   exportParticipantsCsv,
   getAdminVotes,
+  exportVotesCsv,
   getAdminResults,
   updateContestSettings,
   getAdminPrizes,
@@ -37,6 +38,7 @@ router.patch('/participants/:id/status', updateParticipantStatus);
 router.patch('/participants/:id/photo', uploadCostumePhoto.single('photo'), validateImageMagicBytes, updateParticipantPhoto);
 router.get('/photos/pending', getPendingPhotos);
 router.get('/votes', getAdminVotes);
+router.get('/votes/export-csv', exportVotesCsv);
 router.get('/results', getAdminResults);
 router.get('/prizes', getAdminPrizes);
 router.get('/qr', generateQrCode);
