@@ -1,15 +1,19 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Users, Heart, PlusCircle, ShieldCheck } from 'lucide-react';
+import { Home, Users, Radio, PlusCircle, Trophy, ShieldCheck } from 'lucide-react';
+import { useContest } from '../context/ContestContext';
 
 export const BottomNav: React.FC = () => {
   const location = useLocation();
+  const { isLiveActive } = useContest();
 
   const items = [
     { label: 'Inicio', path: '/', icon: Home },
     { label: 'Galería', path: '/participantes', icon: Users },
-    { label: 'Votar', path: '/votar', icon: Heart, primary: true },
-    { label: 'Registrar', path: '/registrar', icon: PlusCircle },
+    ...(isLiveActive
+      ? [{ label: 'En Vivo', path: '/en-vivo', icon: Radio, primary: true }]
+      : [{ label: 'Registrar', path: '/registrar', icon: PlusCircle, primary: true }]),
+    { label: 'Premios', path: '/premios', icon: Trophy },
     { label: 'Admin', path: '/admin', icon: ShieldCheck },
   ];
 

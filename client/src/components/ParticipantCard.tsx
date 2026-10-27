@@ -70,7 +70,7 @@ export const ParticipantCard: React.FC<ParticipantCardProps> = ({
         <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-[#15182A] via-[#15182A]/70 to-transparent pointer-events-none" />
       </div>
 
-      {/* Card Body & Action */}
+      {/* Card Body */}
       <div className="p-3.5 sm:p-4 flex items-center justify-between gap-2.5">
         <div className="min-w-0 flex-1">
           <h3 className="font-display font-bold text-sm sm:text-base text-halloween-white truncate group-hover:text-halloween-orange transition-colors">
@@ -78,25 +78,13 @@ export const ParticipantCard: React.FC<ParticipantCardProps> = ({
           </h3>
           <p className="text-xs text-halloween-muted truncate mt-0.5 flex items-center gap-1">
             <span>{participant.public_display_name}</span>
-            {participant.votes_count !== undefined && (
-              <span className="text-[10px] text-halloween-orange font-semibold ml-1">
-                • {participant.votes_count} votos
-              </span>
-            )}
           </p>
         </div>
 
-        {/* Heart Vote Action Button */}
-        {isVotingOpen && (
-          <button
-            onClick={handleVote}
-            title={`Votar por ${participant.costume_title}`}
-            aria-label={`Votar por participante #${numStr}`}
-            className="flex-shrink-0 w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-[#1C1F38] hover:bg-gradient-to-r hover:from-halloween-orange hover:to-halloween-orange-light text-halloween-lavender hover:text-white border border-[#282B47] hover:border-transparent flex items-center justify-center transition-all duration-200 hover:scale-110 active:scale-95 shadow-sm"
-          >
-            <Heart className="w-4 h-4 sm:w-5 sm:h-5 transition-transform group-hover:scale-110" />
-          </button>
-        )}
+        <div className="flex-shrink-0 text-xs font-semibold text-halloween-lavender group-hover:text-halloween-orange flex items-center gap-1 transition-colors">
+          <span>Ver detalle</span>
+          <span>→</span>
+        </div>
       </div>
     </div>
   );

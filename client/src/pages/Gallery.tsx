@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Sparkles, Filter, RefreshCw, AlertCircle, Heart } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Search, Sparkles, Filter, RefreshCw, AlertCircle, Radio } from 'lucide-react';
 import { Participant } from '../types';
 import { ParticipantCard } from '../components/ParticipantCard';
 import { useContest } from '../context/ContestContext';
 
 export const Gallery: React.FC = () => {
-  const { isVotingOpen } = useContest();
+  const { isLiveActive } = useContest();
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -57,17 +58,19 @@ export const Gallery: React.FC = () => {
           </p>
         </div>
 
-        {/* Voting State Pill */}
+        {/* Live Kahoot Voting State or Exhibition Mode */}
         <div className="flex items-center gap-2">
-          {isVotingOpen ? (
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              Votación abierta
-            </span>
+          {isLiveActive ? (
+            <Link
+              to="/en-vivo"
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold bg-gradient-to-r from-red-600 to-amber-500 text-white shadow-[0_0_15px_rgba(239,68,68,0.5)] animate-pulse hover:brightness-110 transition-all"
+            >
+              <Radio className="w-3.5 h-3.5" />
+              <span>Votación en vivo (Kahoot)</span>
+            </Link>
           ) : (
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-amber-500/20 text-amber-400 border border-amber-500/30">
-              <span className="w-2 h-2 rounded-full bg-amber-400" />
-              Votación cerrada
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-[#15182A] text-halloween-muted border border-halloween-border">
+              <span>🎭 Modo visualización</span>
             </span>
           )}
         </div>
@@ -171,7 +174,6 @@ export const Gallery: React.FC = () => {
               <ParticipantCard
                 key={participant.contest_number}
                 participant={participant}
-                isVotingOpen={isVotingOpen}
               />
             ))}
           </div>

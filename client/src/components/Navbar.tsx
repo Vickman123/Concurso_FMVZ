@@ -94,24 +94,14 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenQr }) => {
               </button>
             )}
 
-            {isLiveActive && (
+            {isLiveActive ? (
               <Link
                 to="/en-vivo"
-                title="Escenario de votación sincronizada en vivo (Modo Kahoot)"
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-red-600/20 border border-red-500/40 text-red-400 hover:bg-red-600/30 text-xs font-bold transition-all shadow-sm animate-pulse"
+                title="Votación sincronizada en vivo (Modo Kahoot)"
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-red-600 via-orange-500 to-amber-500 hover:brightness-110 shadow-[0_0_20px_rgba(239,68,68,0.5)] transition-all animate-pulse"
               >
-                <Radio className="w-3.5 h-3.5" />
-                <span>En Vivo</span>
-              </Link>
-            )}
-
-            {isVotingOpen ? (
-              <Link
-                to="/votar"
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-halloween-orange to-halloween-orange-light hover:brightness-110 shadow-glow-orange transition-all transform hover:-translate-y-0.5 active:scale-95"
-              >
-                <Heart className="w-4 h-4 fill-white" />
-                <span>Votar ahora</span>
+                <Radio className="w-4 h-4" />
+                <span>Votar en Vivo</span>
               </Link>
             ) : (
               <Link
@@ -119,7 +109,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenQr }) => {
                 className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-halloween-white bg-surface hover:bg-surface-raised border border-halloween-border transition-colors"
               >
                 <Sparkles className="w-4 h-4 text-halloween-purple-light" />
-                <span>Ver participantes</span>
+                <span>Ver disfraces</span>
               </Link>
             )}
           </div>
@@ -178,16 +168,18 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenQr }) => {
               </Link>
             );
           })}
-          <div className="pt-2">
-            <Link
-              to="/votar"
-              onClick={() => setMobileMenuOpen(false)}
-              className="w-full flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-white bg-gradient-to-r from-halloween-orange to-halloween-orange-light shadow-glow-orange"
-            >
-              <Heart className="w-4 h-4 fill-white" />
-              <span>Votar ahora</span>
-            </Link>
-          </div>
+          {isLiveActive && (
+            <div className="pt-2">
+              <Link
+                to="/en-vivo"
+                onClick={() => setMobileMenuOpen(false)}
+                className="w-full flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-white bg-gradient-to-r from-red-600 via-orange-500 to-amber-500 shadow-[0_0_20px_rgba(239,68,68,0.5)] animate-pulse"
+              >
+                <Radio className="w-4 h-4" />
+                <span>Votar en Vivo (Kahoot)</span>
+              </Link>
+            </div>
+          )}
         </div>
       )}
     </header>

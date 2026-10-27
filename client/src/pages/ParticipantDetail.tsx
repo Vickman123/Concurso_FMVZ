@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft, Heart, Shield, Sparkles, AlertCircle, Share2, Check } from 'lucide-react';
+import { ArrowLeft, Shield, Sparkles, AlertCircle, Share2, Check, Radio } from 'lucide-react';
 import { Participant } from '../types';
 import { useContest } from '../context/ContestContext';
 
 export const ParticipantDetail: React.FC = () => {
   const { number } = useParams<{ number: string }>();
   const navigate = useNavigate();
-  const { isVotingOpen } = useContest();
+  const { isLiveActive } = useContest();
 
   const [participant, setParticipant] = useState<Participant | null>(null);
   const [loading, setLoading] = useState(true);
@@ -146,23 +146,23 @@ export const ParticipantDetail: React.FC = () => {
             </p>
           </div>
 
-          {/* Vote Action Area */}
+          {/* Action Area: Live Voting or Gallery Mode */}
           <div className="pt-2">
-            {isVotingOpen ? (
+            {isLiveActive ? (
               <button
-                onClick={() => navigate(`/votar/confirmar/${participant.contest_number}`)}
-                className="w-full flex items-center justify-center gap-3 py-4 rounded-2xl font-display font-extrabold text-base text-white bg-gradient-to-r from-halloween-orange to-amber-600 hover:from-halloween-orange-dark hover:to-halloween-orange shadow-glow-orange transition-all transform hover:-translate-y-0.5 active:scale-95"
+                onClick={() => navigate('/en-vivo')}
+                className="w-full flex items-center justify-center gap-3 py-4 rounded-2xl font-display font-extrabold text-base text-white bg-gradient-to-r from-red-600 via-orange-500 to-amber-500 hover:brightness-110 shadow-[0_0_25px_rgba(239,68,68,0.5)] transition-all animate-pulse transform hover:-translate-y-0.5 active:scale-95"
               >
-                <Heart className="w-5 h-5 fill-white" />
-                <span>Votar por este disfraz</span>
+                <Radio className="w-5 h-5 text-white" />
+                <span>¡Pasarela en Vivo activa! Ir a votar (Kahoot)</span>
               </button>
             ) : (
               <div className="p-4 rounded-2xl bg-surface-raised border border-halloween-border text-center">
-                <span className="text-xs text-amber-400 font-semibold block">
-                  La votación pública no se encuentra abierta en este momento.
+                <span className="text-xs text-halloween-lavender font-semibold block">
+                  🎭 Modo Visualización y Exhibición
                 </span>
                 <span className="text-[11px] text-gray-400 mt-1 block">
-                  El periodo de votación se habilitará el 3 de noviembre de 2026.
+                  La votación se habilitará en vivo durante la pasarela en el auditorio (estilo Kahoot).
                 </span>
               </div>
             )}
