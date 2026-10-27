@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, QrCode, Sparkles, Heart, Volume2, VolumeX, Radio } from 'lucide-react';
+import { Menu, X, QrCode, Sparkles, Radio } from 'lucide-react';
 import { useContest } from '../context/ContestContext';
-import { soundEngine } from '../services/soundEffects';
 import { EventLogo } from './EventLogo';
 
 interface NavbarProps {
@@ -11,9 +10,8 @@ interface NavbarProps {
 
 export const Navbar: React.FC<NavbarProps> = ({ onOpenQr }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [isAudioActive, setIsAudioActive] = useState(false);
   const location = useLocation();
-  const { isVotingOpen, isLiveActive } = useContest();
+  const { isLiveActive } = useContest();
 
   const navLinks = [
     { label: 'Inicio', path: '/' },
@@ -28,11 +26,6 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenQr }) => {
     if (path === '/' && location.pathname === '/') return true;
     if (path !== '/' && location.pathname.startsWith(path)) return true;
     return false;
-  };
-
-  const handleToggleAudio = () => {
-    const active = soundEngine.toggle();
-    setIsAudioActive(active);
   };
 
   return (
@@ -70,20 +63,6 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenQr }) => {
 
           {/* Desktop Actions */}
           <div className="hidden md:flex items-center gap-2.5">
-            {/* Ambient sound toggle */}
-            <button
-              onClick={handleToggleAudio}
-              aria-label={isAudioActive ? 'Silenciar ambiente' : 'Activar sonido ambiental misterioso'}
-              title={isAudioActive ? 'Silenciar atmósfera de Halloween' : 'Activar atmósfera misteriosa (Web Audio)'}
-              className={`p-2 rounded-xl border transition-all ${
-                isAudioActive
-                  ? 'bg-halloween-orange/20 border-halloween-orange text-halloween-orange shadow-glow-orange animate-pulse'
-                  : 'bg-surface border-halloween-border text-halloween-muted hover:text-halloween-white hover:bg-surface-raised'
-              }`}
-            >
-              {isAudioActive ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
-            </button>
-
             {onOpenQr && (
               <button
                 onClick={onOpenQr}
@@ -116,18 +95,6 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenQr }) => {
 
           {/* Mobile menu and action buttons */}
           <div className="flex md:hidden items-center gap-2">
-            <button
-              onClick={handleToggleAudio}
-              aria-label={isAudioActive ? 'Silenciar sonido' : 'Activar sonido'}
-              className={`p-2 rounded-xl border ${
-                isAudioActive
-                  ? 'bg-halloween-orange/20 border-halloween-orange text-halloween-orange'
-                  : 'bg-surface border-halloween-border text-halloween-muted'
-              }`}
-            >
-              {isAudioActive ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
-            </button>
-
             {onOpenQr && (
               <button
                 onClick={onOpenQr}
