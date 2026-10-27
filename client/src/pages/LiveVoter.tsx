@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
+import confetti from 'canvas-confetti';
 import {
   Sparkles,
   CheckCircle2,
@@ -11,6 +12,9 @@ import {
   AlertCircle,
   LogOut,
   User,
+  Tv,
+  ArrowRight,
+  Smile,
 } from 'lucide-react';
 import { EventLogo } from '../components/EventLogo';
 
@@ -46,11 +50,12 @@ export const LiveVoter: React.FC = () => {
   const [currentVoteValue, setCurrentVoteValue] = useState<'yes' | 'no' | null>(null);
   const [votingLoading, setVotingLoading] = useState<boolean>(false);
   const [reactionFeedback, setReactionFeedback] = useState<string | null>(null);
+  const [justJoined, setJustJoined] = useState<boolean>(false);
 
   // Track votes recorded per participant during this session
   const votedParticipantsRef = useRef<Set<number>>(new Set());
 
-  // SSE & Fallback
+  // SSE & Fallback Polling
   useEffect(() => {
     const fetchState = async () => {
       try {
@@ -80,7 +85,8 @@ export const LiveVoter: React.FC = () => {
       } catch {}
     });
 
-    const pollInterval = setInterval(fetchState, 3000);
+    // Fallback poll every 2.5s
+    const pollInterval = setInterval(fetchState, 2500);
 
     return () => {
       eventSource.close();
@@ -108,7 +114,7 @@ export const LiveVoter: React.FC = () => {
     }
   };
 
-  // Voter registration / sign-in
+  // Voter registration / sign-in with join animation
   const handleIdentify = (e: React.FormEvent) => {
     e.preventDefault();
     setAuthError(null);
@@ -133,8 +139,21 @@ export const LiveVoter: React.FC = () => {
       institutional_identifier: cleanId,
     };
 
-    localStorage.setItem('fmvz_voter', JSON.stringify(newVoter));
-    setVoter(newVoter);
+    try {
+      confetti({
+        particleCount: 70,
+        spread: 60,
+        origin: { y: 0.6 },
+        colors: ['#FF7417', '#8B5CF6', '#FFA439', '#FFFFFF'],
+      });
+    } catch {}
+
+    setJustJoined(true);
+    setTimeout(() => {
+      localStorage.setItem('fmvz_voter', JSON.stringify(newVoter));
+      setVoter(newVoter);
+      setJustJoined(false);
+    }, 400);
   };
 
   const handleLogout = () => {
@@ -164,10 +183,24 @@ export const LiveVoter: React.FC = () => {
         setHasVotedForCurrent(true);
         setCurrentVoteValue(value);
 
+        if (value === 'yes') {
+          try {
+            confetti({
+              particleCount: 50,
+              spread: 60,
+              origin: { y: 0.7 },
+              colors: ['#10B981', '#FF7417', '#8B5CF6'],
+            });
+          } catch {}
+        }
+
         // Haptic feedback
         if (navigator.vibrate) {
           navigator.vibrate([40, 60, 40]);
         }
+      } else {
+        const errData = await res.json().catch(() => ({}));
+        alert(errData.message || 'La votación para este participante no está abierta en este momento.');
       }
     } catch {
       alert('Error de conexión al emitir tu voto.');
@@ -211,15 +244,15 @@ export const LiveVoter: React.FC = () => {
                 Escenario en Pausa
               </span>
               <h1 className="font-display font-black text-xl text-white mt-3">
-                Votación en Vivo No Disponible Aún
+                Votación en Vivo en Espera
               </h1>
               <p className="text-xs text-halloween-muted mt-2 leading-relaxed">
-                El modo escenario y votación sincronizada en la pasarela será activado por los moderadores el día oficial del evento: <strong>3 de noviembre de 2026</strong>.
+                El modo escenario y votación sincronizada en el auditorio será activado en cuanto el comité organizador dé inicio a la pasarela oficial.
               </p>
             </div>
 
             <div className="p-3.5 rounded-2xl bg-surface-raised border border-halloween-border text-xs text-gray-300">
-              Puedes emitir tu voto formal y explorar todos los disfraces en la galería pública.
+              Puedes explorar todos los disfraces inscritos en la galería oficial.
             </div>
 
             <div className="space-y-2 pt-2">
@@ -227,7 +260,7 @@ export const LiveVoter: React.FC = () => {
                 href="/participantes"
                 className="w-full block py-3 rounded-xl font-bold text-xs text-white bg-gradient-to-r from-halloween-orange to-amber-600 shadow-glow-orange hover:brightness-110 transition-all text-center"
               >
-                Ver Galería y Votar
+                Ver Galería de Disfraces
               </a>
               <a
                 href="/"
@@ -251,13 +284,13 @@ export const LiveVoter: React.FC = () => {
             <EventLogo size="lg" className="mx-auto mb-3 justify-center" />
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-halloween-orange/20 border border-halloween-orange/40 text-halloween-orange text-xs font-bold uppercase tracking-wider mb-2">
               <Radio className="w-3.5 h-3.5" />
-              <span>VOTACIÓN EN VIVO · KAHOOT MODE</span>
+              <span>VOTACIÓN EN VIVO · KAHOOT MODE FMVZ</span>
             </div>
             <h1 className="font-display font-black text-2xl text-white">
               Identifícate para Votar
             </h1>
             <p className="text-xs text-halloween-muted mt-1">
-              Ingresa tus datos una sola vez para votar en tiempo real por cada disfraz en la pasarela.
+              Ingresa tus datos una sola vez para calificar en tiempo real cada disfraz en el auditorio.
             </p>
           </div>
 
@@ -331,9 +364,11 @@ export const LiveVoter: React.FC = () => {
 
               <button
                 type="submit"
-                className="w-full py-3.5 rounded-xl font-bold text-sm text-white bg-gradient-to-r from-halloween-orange to-amber-600 hover:from-halloween-orange-dark hover:to-halloween-orange shadow-glow-orange transition-all"
+                disabled={justJoined}
+                className="w-full py-3.5 rounded-xl font-bold text-sm text-white bg-gradient-to-r from-halloween-orange to-amber-600 hover:from-halloween-orange-dark hover:to-halloween-orange shadow-glow-orange transition-all flex items-center justify-center gap-2"
               >
-                Entrar al Concurso en Vivo
+                <span>{justJoined ? '¡Conectando al auditorio...!' : '🎃 Entrar al Concurso en Vivo'}</span>
+                <ArrowRight className="w-4 h-4" />
               </button>
             </form>
           </div>
@@ -345,14 +380,23 @@ export const LiveVoter: React.FC = () => {
   // 2. Synchronized Live Voting Screen
   return (
     <div className="min-h-screen bg-[#080A12] text-halloween-white flex flex-col justify-between max-w-md mx-auto relative select-none">
-      {/* Top Header */}
-      <header className="p-4 border-b border-halloween-border/60 bg-[#0A0D1B]/90 backdrop-blur-md flex items-center justify-between sticky top-0 z-30">
+      {/* Top Header with User Info & Big Screen Toggle */}
+      <header className="p-3.5 border-b border-halloween-border/60 bg-[#0A0D1B]/95 backdrop-blur-md flex items-center justify-between sticky top-0 z-30">
         <EventLogo size="sm" className="scale-85 origin-left" />
 
         <div className="flex items-center gap-2">
+          <a
+            href="/en-vivo"
+            className="p-1.5 rounded-lg bg-surface-raised border border-halloween-border text-gray-300 hover:text-white flex items-center gap-1 text-[11px]"
+            title="Ver pantalla de proyección"
+          >
+            <Tv className="w-3.5 h-3.5 text-halloween-lavender" />
+            <span className="hidden sm:inline">Pantalla</span>
+          </a>
+
           <div className="px-2.5 py-1 rounded-full bg-surface-raised border border-halloween-border text-[11px] text-gray-300 flex items-center gap-1.5">
             <User className="w-3 h-3 text-halloween-orange" />
-            <span className="truncate max-w-[100px]">{voter.full_name.split(' ')[0]}</span>
+            <span className="truncate max-w-[90px]">{voter.full_name.split(' ')[0]}</span>
           </div>
 
           <button
@@ -377,37 +421,48 @@ export const LiveVoter: React.FC = () => {
               ¡Concurso Finalizado!
             </h2>
             <p className="text-xs text-halloween-lavender">
-              Observa la pantalla gigante del auditorio para ver los disfraces ganadores de los premios oficiales.
+              Observa la pantalla gigante del auditorio para ver los disfraces ganadores de los premios oficiales de la FMVZ.
             </p>
           </div>
         ) : currentParticipant ? (
-          /* Active Participant Card */
+          /* Active Participant Card - Dual Layer Smart Display (No Cropping) */
           <div className="space-y-4 animate-fade-in">
-            {/* Participant Card */}
-            <div className="relative rounded-3xl overflow-hidden border-2 border-halloween-purple/50 bg-[#121528] shadow-glow-purple">
-              <div className="aspect-[4/3] w-full relative">
+            <div className="relative rounded-3xl overflow-hidden border-2 border-halloween-purple/50 bg-[#080A12] shadow-glow-purple">
+              <div className="relative w-full h-72 sm:h-80 flex items-center justify-center overflow-hidden">
+                {/* Ambient Blurred Background (Matches costume colors) */}
+                <img
+                  src={currentParticipant.photo_thumbnail_key || currentParticipant.photo_original_key}
+                  alt=""
+                  aria-hidden="true"
+                  className="absolute inset-0 w-full h-full object-cover blur-2xl opacity-40 scale-110 pointer-events-none"
+                />
+
+                {/* Complete Uncropped Costume Photo */}
                 <img
                   src={currentParticipant.photo_original_key}
                   alt={currentParticipant.costume_title}
-                  className="w-full h-full object-cover"
+                  className="relative z-10 max-h-full max-w-full object-contain p-2 drop-shadow-2xl"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#080A12] via-transparent to-transparent opacity-80" />
+
+                {/* Soft Bottom Vignette */}
+                <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-[#080A12]/95 via-[#080A12]/50 to-transparent z-15 pointer-events-none" />
 
                 {/* Number & Type Badge */}
-                <div className="absolute top-3 left-3 px-3 py-1 rounded-xl bg-black/80 border border-halloween-orange/60 text-white font-mono font-black text-sm">
+                <div className="absolute top-3 left-3 z-20 px-3 py-1 rounded-xl bg-black/85 border border-halloween-orange/60 text-white font-mono font-black text-sm backdrop-blur-md">
                   #{String(currentParticipant.contest_number).padStart(2, '0')}
                 </div>
 
-                <div className="absolute top-3 right-3 px-2.5 py-0.5 rounded-lg bg-halloween-purple text-white text-[10px] font-bold uppercase">
+                <div className="absolute top-3 right-3 z-20 px-2.5 py-1 rounded-lg bg-halloween-purple/90 border border-purple-400/30 text-white text-[10px] font-bold uppercase backdrop-blur-md">
                   {currentParticipant.participant_type === 'student' ? 'Estudiante' : 'Trabajador'}
                 </div>
 
-                <div className="absolute bottom-3 left-4 right-4">
-                  <h2 className="font-display font-black text-xl text-white leading-tight">
+                {/* Title */}
+                <div className="absolute bottom-3 left-4 right-4 z-20">
+                  <h2 className="font-display font-black text-xl text-white leading-tight drop-shadow truncate">
                     {currentParticipant.costume_title}
                   </h2>
-                  <p className="text-xs text-halloween-lavender">
-                    {currentParticipant.public_display_name}
+                  <p className="text-xs text-halloween-lavender drop-shadow truncate">
+                    Por {currentParticipant.public_display_name}
                   </p>
                 </div>
               </div>
@@ -423,7 +478,7 @@ export const LiveVoter: React.FC = () => {
                       {currentVoteValue === 'yes' ? '¡Voto Emitido (SÍ)! 🎃' : 'Decidiste Pasar'}
                     </h3>
                     <p className="text-[11px] text-gray-300">
-                      Tu voto fue registrado en tiempo real en la pantalla del escenario.
+                      Tu voto se registró en tiempo real en la pantalla del auditorio.
                     </p>
                   </div>
                 ) : (
@@ -434,7 +489,7 @@ export const LiveVoter: React.FC = () => {
                       className="w-full py-4 px-6 rounded-2xl font-display font-black text-lg text-white bg-gradient-to-r from-halloween-orange via-amber-500 to-halloween-orange shadow-glow-orange hover:brightness-110 active:scale-95 transition-all flex items-center justify-center gap-3 animate-bounce-subtle"
                     >
                       <ThumbsUp className="w-6 h-6" />
-                      <span>¡VOTAR POR ESTE DISFRAZ!</span>
+                      <span>{votingLoading ? 'Registrando...' : '¡VOTAR POR ESTE DISFRAZ!'}</span>
                     </button>
 
                     <button
@@ -450,19 +505,19 @@ export const LiveVoter: React.FC = () => {
             ) : stageStatus === 'voting_closed' ? (
               <div className="p-4 rounded-2xl bg-surface-raised border border-halloween-border text-center space-y-1">
                 <span className="text-xs font-bold text-red-400 uppercase tracking-wider block">
-                  Votación Cerrada
+                  Votación Concluida para este participante
                 </span>
                 <p className="text-xs text-halloween-muted">
-                  El presentador está por llamar al siguiente participante...
+                  El presentador está por llamar al siguiente concursante...
                 </p>
               </div>
             ) : (
               <div className="p-4 rounded-2xl bg-surface-raised border border-halloween-border text-center space-y-1">
                 <span className="text-xs font-bold text-halloween-lavender uppercase tracking-wider block">
-                  En el Escenario
+                  En Pasarela
                 </span>
                 <p className="text-xs text-halloween-muted">
-                  Mira la pasarela. La votación se abrirá en unos instantes.
+                  Observa el escenario. En breve se activará el botón para calificar este disfraz.
                 </p>
               </div>
             )}

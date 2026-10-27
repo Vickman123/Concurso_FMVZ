@@ -279,11 +279,19 @@ export const AdminLiveControl: React.FC = () => {
           {/* Current Participant on Stage */}
           {current ? (
             <div className="flex flex-col sm:flex-row items-center gap-6 bg-[#0B0D1A] p-5 rounded-2xl border border-halloween-border">
-              <img
-                src={current.photo_thumbnail_key || current.photo_original_key}
-                alt={current.costume_title}
-                className="w-32 h-32 sm:w-40 sm:h-40 object-cover rounded-2xl border-2 border-halloween-orange/60 shadow-md flex-shrink-0"
-              />
+              <div className="relative w-36 h-36 sm:w-44 sm:h-44 rounded-2xl overflow-hidden border-2 border-halloween-orange/60 bg-[#080A12] flex items-center justify-center flex-shrink-0 shadow-md">
+                <img
+                  src={current.photo_thumbnail_key || current.photo_original_key}
+                  alt=""
+                  aria-hidden="true"
+                  className="absolute inset-0 w-full h-full object-cover blur-sm opacity-40 pointer-events-none"
+                />
+                <img
+                  src={current.photo_original_key}
+                  alt={current.costume_title}
+                  className="relative z-10 max-h-full max-w-full object-contain p-1 drop-shadow"
+                />
+              </div>
               <div className="space-y-2 text-center sm:text-left flex-1">
                 <div className="flex items-center justify-center sm:justify-start gap-2">
                   <span className="px-3 py-0.5 rounded-lg bg-halloween-orange text-black font-mono font-black text-xs">

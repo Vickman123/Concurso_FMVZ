@@ -8,6 +8,7 @@ import { Navbar } from './components/Navbar';
 import { BottomNav } from './components/BottomNav';
 import { Footer } from './components/Footer';
 import { QrCodeModal } from './components/QrCodeModal';
+import { LiveAnnouncementModal } from './components/LiveAnnouncementModal';
 
 // Public Pages
 import { Home } from './pages/Home';
@@ -128,6 +129,9 @@ const AppContent: React.FC = () => {
 
       {/* QR Code Modal */}
       <QrCodeModal isOpen={qrModalOpen} onClose={() => setQrModalOpen(false)} />
+
+      {/* Live Stage Auditorium Announcement Modal */}
+      <LiveAnnouncementModal />
     </div>
   );
 };

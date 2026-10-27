@@ -45,8 +45,9 @@ export const CustomQrWithLogo: React.FC<CustomQrWithLogoProps> = ({
 
         if (isCancelled) return;
 
-        // 2. Overlay center emblem badge if showLogo is true
-        if (showLogo) {
+        // 2. Overlay center emblem badge if showLogo is true and size is large enough to preserve instant scanning
+        const shouldDrawLogo = showLogo && size >= 130;
+        if (shouldDrawLogo) {
           const ctx = canvas.getContext('2d');
           if (!ctx) return;
 

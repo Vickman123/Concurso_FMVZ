@@ -12,6 +12,10 @@ import {
   Radio,
   Volume2,
   VolumeX,
+  Smartphone,
+  CheckCircle2,
+  ArrowRight,
+  Tv,
 } from 'lucide-react';
 import { CustomQrWithLogo } from '../components/CustomQrWithLogo';
 import { EventLogo } from '../components/EventLogo';
@@ -66,7 +70,11 @@ export const LiveProjector: React.FC = () => {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [reactions, setReactions] = useState<FloatingReaction[]>([]);
   const [countdown, setCountdown] = useState<number>(30);
+  const [joinNotification, setJoinNotification] = useState<{ id: string; count: number } | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const previousClientsCountRef = useRef<number>(1);
+
+  const voterUrl = `${window.location.origin}/votar/en-vivo`;
 
   // Toggle Fullscreen
   const toggleFullscreen = () => {
@@ -79,6 +87,14 @@ export const LiveProjector: React.FC = () => {
         setIsFullscreen(false);
       }
     }
+  };
+
+  // Trigger floating join notification
+  const triggerJoinNotification = (count: number) => {
+    setJoinNotification({ id: `${Date.now()}`, count });
+    setTimeout(() => {
+      setJoinNotification(null);
+    }, 3500);
   };
 
   // Add floating reaction
@@ -102,6 +118,12 @@ export const LiveProjector: React.FC = () => {
       const res = await fetch('/api/live/state');
       if (res.ok) {
         const data = await res.json();
+        if (data.connected_clients && data.connected_clients > previousClientsCountRef.current) {
+          triggerJoinNotification(data.connected_clients);
+        }
+        if (data.connected_clients) {
+          previousClientsCountRef.current = data.connected_clients;
+        }
         setState(data);
       }
     } catch {
@@ -119,6 +141,9 @@ export const LiveProjector: React.FC = () => {
       try {
         const data = JSON.parse(e.data);
         setState(data);
+        if (data.connected_clients) {
+          previousClientsCountRef.current = data.connected_clients;
+        }
       } catch (err) {}
     });
 
@@ -146,6 +171,27 @@ export const LiveProjector: React.FC = () => {
       } catch (err) {}
     });
 
+    eventSource.addEventListener('VIEWER_JOINED', (e: MessageEvent) => {
+      try {
+        const data = JSON.parse(e.data);
+        if (data.connected_clients) {
+          setState((prev) => ({ ...prev, connected_clients: data.connected_clients }));
+          triggerJoinNotification(data.connected_clients);
+          previousClientsCountRef.current = data.connected_clients;
+        }
+      } catch (err) {}
+    });
+
+    eventSource.addEventListener('VIEWER_LEFT', (e: MessageEvent) => {
+      try {
+        const data = JSON.parse(e.data);
+        if (data.connected_clients) {
+          setState((prev) => ({ ...prev, connected_clients: data.connected_clients }));
+          previousClientsCountRef.current = data.connected_clients;
+        }
+      } catch (err) {}
+    });
+
     eventSource.addEventListener('REACTION', (e: MessageEvent) => {
       try {
         const data = JSON.parse(e.data);
@@ -156,7 +202,7 @@ export const LiveProjector: React.FC = () => {
       } catch (err) {}
     });
 
-    // Fallback polling every 2.5s
+    // Fallback polling every 2.5s for unstable auditorium networks
     const pollInterval = setInterval(fetchState, 2500);
 
     return () => {
@@ -201,7 +247,9 @@ export const LiveProjector: React.FC = () => {
   };
 
   const participant = state.current_participant;
-  const topParticipants = [...state.participants].sort((a, b) => (b.live_yes_votes || 0) - (a.live_yes_votes || 0)).slice(0, 3);
+  const topParticipants = [...state.participants]
+    .sort((a, b) => (b.live_yes_votes || 0) - (a.live_yes_votes || 0))
+    .slice(0, 3);
 
   // If stage is deactivated by admin
   if (state.is_active === false) {
@@ -227,7 +275,7 @@ export const LiveProjector: React.FC = () => {
               Escenario en Vivo en Espera
             </h1>
             <p className="text-xs sm:text-sm text-halloween-muted leading-relaxed">
-              La proyección y votación sincronizada en el auditorio de la FMVZ se activará el día oficial del concurso una vez que el comité organizador dé inicio a la pasarela.
+              La proyección y votación sincronizada en el auditorio de la FMVZ se activará en cuanto el moderador dé inicio a la pasarela en el panel de administración.
             </p>
           </div>
 
@@ -251,25 +299,49 @@ export const LiveProjector: React.FC = () => {
           </div>
         </div>
 
-        <footer className="text-center text-xs text-gray-500">
-          FMVZ UNAM · Segundo Concurso de Disfraces
+        <footer className="text-center text-xs text-halloween-muted">
+          Facultad de Medicina Veterinaria y Zootecnia — UNAM
         </footer>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#080A12] text-halloween-white flex flex-col justify-between overflow-hidden relative select-none font-sans">
-      {/* Background ambient lighting */}
-      <div className="absolute top-0 left-1/4 w-96 h-96 bg-halloween-orange/15 rounded-full blur-[140px] pointer-events-none" />
-      <div className="absolute bottom-0 right-1/4 w-[32rem] h-[32rem] bg-halloween-purple/20 rounded-full blur-[160px] pointer-events-none" />
+    <div className="min-h-screen bg-[#080A12] text-halloween-white flex flex-col justify-between overflow-hidden relative select-none">
+      {/* Floating Join Notification Banner (Toast) */}
+      {joinNotification && (
+        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 animate-bounce-subtle pointer-events-none">
+          <div className="px-5 py-2.5 rounded-full bg-gradient-to-r from-halloween-purple via-indigo-600 to-halloween-orange border border-amber-300/60 text-white font-display font-bold text-xs sm:text-sm shadow-[0_0_25px_rgba(255,116,23,0.6)] flex items-center gap-2">
+            <span className="text-lg">👻</span>
+            <span>¡Nuevo espectador unido desde el auditorio!</span>
+            <span className="px-2 py-0.5 rounded-full bg-black/40 text-amber-300 font-mono text-xs">
+              Total: {joinNotification.count}
+            </span>
+          </div>
+        </div>
+      )}
 
-      {/* Floating Reactions Layer */}
+      {/* Mobile Voter Hint Banner (If opened on a phone) */}
+      <div className="md:hidden bg-gradient-to-r from-halloween-orange to-purple-700 px-4 py-2 flex items-center justify-between z-40 text-xs font-bold text-white shadow-md">
+        <div className="flex items-center gap-2">
+          <Smartphone className="w-4 h-4 animate-bounce" />
+          <span>¿Quieres votar desde tu celular?</span>
+        </div>
+        <a
+          href="/votar/en-vivo"
+          className="px-3 py-1 bg-black/60 rounded-lg text-[11px] font-bold text-amber-300 border border-amber-400 flex items-center gap-1"
+        >
+          <span>Abrir Control</span>
+          <ArrowRight className="w-3 h-3" />
+        </a>
+      </div>
+
+      {/* Floating Reaction Emojis Container */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden z-40">
         {reactions.map((r) => (
           <div
             key={r.id}
-            className="absolute bottom-10 text-4xl animate-float-up pointer-events-none select-none transition-all duration-1000 ease-out"
+            className="absolute bottom-16 text-5xl sm:text-6xl animate-float-up"
             style={{ left: `${r.x}%` }}
           >
             {r.emoji}
@@ -277,66 +349,76 @@ export const LiveProjector: React.FC = () => {
         ))}
       </div>
 
-      {/* Top Header Bar for Stage / Auditorium */}
-      <header className="px-6 py-4 flex items-center justify-between border-b border-halloween-border/60 bg-[#0A0D1B]/80 backdrop-blur-md z-30">
+      {/* Stage Top Bar Header */}
+      <header className="px-6 py-4 border-b border-halloween-border/60 bg-[#0A0D1B]/90 backdrop-blur-md flex items-center justify-between z-30">
         <div className="flex items-center gap-4">
-          <EventLogo size="md" className="scale-95 origin-left" />
-          <div className="hidden md:flex items-center gap-2 px-3 py-1 rounded-full bg-red-600/20 border border-red-500/40 text-red-400 text-xs font-black tracking-wider uppercase shadow-inner animate-pulse">
+          <EventLogo size="md" />
+          <div className="hidden sm:flex items-center gap-2 px-3 py-1 rounded-full bg-red-600/20 border border-red-500/40 text-red-400 text-xs font-bold uppercase tracking-wider">
+            <span className="w-2 h-2 rounded-full bg-red-500 animate-ping" />
             <Radio className="w-3.5 h-3.5" />
-            <span>EN VIVO · ESCENARIO FMVZ</span>
+            <span>Escenario en Vivo · Auditorio</span>
           </div>
         </div>
 
-        {/* Audience and Stage Metrics */}
-        <div className="flex items-center gap-5">
-          <div className="flex items-center gap-2 px-4 py-1.5 rounded-2xl bg-surface-raised border border-halloween-border text-xs">
+        {/* Live Audience & Controls Stats */}
+        <div className="flex items-center gap-3 sm:gap-6">
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-2xl bg-surface-raised border border-halloween-border text-xs">
             <Users className="w-4 h-4 text-halloween-purple-light" />
-            <span className="text-gray-400">Espectadores en vivo:</span>
-            <strong className="text-white font-mono text-sm">{Math.max(state.connected_clients, 1)}</strong>
+            <span className="font-mono font-bold text-white">{state.connected_clients}</span>
+            <span className="hidden sm:inline text-halloween-muted">espectadores</span>
           </div>
 
-          <div className="flex items-center gap-2 px-4 py-1.5 rounded-2xl bg-surface-raised border border-halloween-border text-xs">
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-2xl bg-surface-raised border border-halloween-border text-xs">
             <Flame className="w-4 h-4 text-halloween-orange" />
-            <span className="text-gray-400">Reacciones:</span>
-            <strong className="text-halloween-orange font-mono text-sm">{state.total_cheers}</strong>
+            <span className="font-mono font-bold text-halloween-orange">{state.total_cheers}</span>
+            <span className="hidden sm:inline text-halloween-muted">aplausos</span>
           </div>
 
           <button
             onClick={toggleFullscreen}
-            className="p-2.5 rounded-2xl bg-surface-raised border border-halloween-border hover:border-halloween-orange text-gray-300 hover:text-white transition-all shadow-md"
-            title="Pantalla completa para proyector"
+            className="p-2 rounded-xl bg-surface-raised border border-halloween-border text-gray-400 hover:text-white transition-colors"
+            title="Pantalla Completa"
           >
-            {isFullscreen ? <Minimize2 className="w-5 h-5" /> : <Maximize2 className="w-5 h-5" />}
+            {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
           </button>
         </div>
       </header>
 
-      {/* Main Stage Presentation Area */}
-      <main className="flex-1 p-6 md:p-10 flex items-center justify-center z-20">
+      {/* Main Auditorium Projection Canvas */}
+      <main className="flex-1 flex items-center justify-center p-4 sm:p-8 z-20 relative">
         {state.stage_status === 'podium' ? (
-          /* Podium / Winners Display */
-          <div className="w-full max-w-6xl text-center space-y-8 animate-fade-in">
-            <div className="inline-flex items-center gap-2 px-6 py-2 rounded-full bg-amber-500/20 border border-amber-400/50 text-amber-300 font-black tracking-widest uppercase text-sm shadow-glow-orange">
-              <Award className="w-5 h-5" />
-              <span>RESULTADOS EN VIVO DEL PÚBLICO</span>
+          /* Podium Winners View */
+          <div className="w-full max-w-6xl space-y-8 animate-fade-in text-center">
+            <div className="space-y-2">
+              <span className="px-4 py-1.5 rounded-full bg-amber-500/20 border border-amber-400/40 text-amber-300 font-bold text-xs uppercase tracking-wider inline-flex items-center gap-2">
+                <Award className="w-4 h-4" />
+                <span>Veredicto del Público FMVZ</span>
+              </span>
+              <h1 className="font-display font-black text-4xl sm:text-6xl text-white">
+                👑 Podio de Ganadores en Vivo
+              </h1>
             </div>
 
-            <h1 className="font-display font-black text-4xl md:text-6xl text-white">
-              Podio de Disfraces Más Votados
-            </h1>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-6 items-end">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-end pt-6">
               {/* 2nd Place */}
               {topParticipants[1] && (
-                <div className="glass-panel p-6 rounded-3xl border border-gray-400/30 text-center space-y-4 order-2 md:order-1 h-[420px] flex flex-col justify-between">
-                  <div className="w-12 h-12 mx-auto rounded-full bg-gray-400/20 text-gray-200 font-black text-xl flex items-center justify-center border border-gray-400/40">
+                <div className="glass-panel p-6 rounded-3xl border border-gray-400/40 text-center space-y-4 order-2 md:order-1 h-[420px] flex flex-col justify-between">
+                  <div className="w-12 h-12 mx-auto rounded-full bg-gray-400/20 text-gray-200 font-black text-xl flex items-center justify-center border border-gray-400">
                     2º
                   </div>
-                  <img
-                    src={topParticipants[1].photo_thumbnail_key || topParticipants[1].photo_original_key}
-                    alt={topParticipants[1].costume_title}
-                    className="w-40 h-40 object-cover rounded-2xl mx-auto border-2 border-gray-400/40 shadow-md"
-                  />
+                  <div className="relative w-40 h-40 mx-auto rounded-2xl overflow-hidden border-2 border-gray-400/50 bg-[#080A12] flex items-center justify-center shadow-lg">
+                    <img
+                      src={topParticipants[1].photo_thumbnail_key || topParticipants[1].photo_original_key}
+                      alt=""
+                      aria-hidden="true"
+                      className="absolute inset-0 w-full h-full object-cover blur-md opacity-40"
+                    />
+                    <img
+                      src={topParticipants[1].photo_original_key}
+                      alt={topParticipants[1].costume_title}
+                      className="relative z-10 max-h-full max-w-full object-contain p-1"
+                    />
+                  </div>
                   <div>
                     <h3 className="font-display font-bold text-xl text-white truncate">
                       {topParticipants[1].costume_title}
@@ -351,15 +433,23 @@ export const LiveProjector: React.FC = () => {
 
               {/* 1st Place */}
               {topParticipants[0] && (
-                <div className="glass-panel p-8 rounded-3xl border-2 border-amber-500/60 shadow-glow-orange text-center space-y-4 order-1 md:order-2 h-[480px] flex flex-col justify-between bg-gradient-to-b from-[#1F1910] to-[#121528]">
+                <div className="glass-panel p-8 rounded-3xl border-2 border-amber-500/60 shadow-[0_0_50px_rgba(245,158,11,0.4)] text-center space-y-4 order-1 md:order-2 h-[500px] flex flex-col justify-between bg-gradient-to-b from-[#1F1910] to-[#121528]">
                   <div className="w-16 h-16 mx-auto rounded-full bg-amber-500/30 text-amber-300 font-black text-2xl flex items-center justify-center border-2 border-amber-400 shadow-glow-orange animate-bounce">
                     👑 1º
                   </div>
-                  <img
-                    src={topParticipants[0].photo_thumbnail_key || topParticipants[0].photo_original_key}
-                    alt={topParticipants[0].costume_title}
-                    className="w-48 h-48 object-cover rounded-2xl mx-auto border-4 border-amber-400 shadow-glow-orange"
-                  />
+                  <div className="relative w-52 h-52 mx-auto rounded-2xl overflow-hidden border-4 border-amber-400 shadow-[0_0_30px_rgba(245,158,11,0.5)] bg-[#080A12] flex items-center justify-center">
+                    <img
+                      src={topParticipants[0].photo_thumbnail_key || topParticipants[0].photo_original_key}
+                      alt=""
+                      aria-hidden="true"
+                      className="absolute inset-0 w-full h-full object-cover blur-md opacity-40"
+                    />
+                    <img
+                      src={topParticipants[0].photo_original_key}
+                      alt={topParticipants[0].costume_title}
+                      className="relative z-10 max-h-full max-w-full object-contain p-2"
+                    />
+                  </div>
                   <div>
                     <h3 className="font-display font-black text-2xl text-amber-200">
                       {topParticipants[0].costume_title}
@@ -374,15 +464,23 @@ export const LiveProjector: React.FC = () => {
 
               {/* 3rd Place */}
               {topParticipants[2] && (
-                <div className="glass-panel p-6 rounded-3xl border border-amber-700/40 text-center space-y-4 order-3 h-[380px] flex flex-col justify-between">
+                <div className="glass-panel p-6 rounded-3xl border border-amber-700/40 text-center space-y-4 order-3 h-[400px] flex flex-col justify-between">
                   <div className="w-12 h-12 mx-auto rounded-full bg-amber-800/20 text-amber-400 font-black text-xl flex items-center justify-center border border-amber-700/50">
                     3º
                   </div>
-                  <img
-                    src={topParticipants[2].photo_thumbnail_key || topParticipants[2].photo_original_key}
-                    alt={topParticipants[2].costume_title}
-                    className="w-36 h-36 object-cover rounded-2xl mx-auto border-2 border-amber-700/50 shadow-md"
-                  />
+                  <div className="relative w-36 h-36 mx-auto rounded-2xl overflow-hidden border-2 border-amber-700/50 bg-[#080A12] flex items-center justify-center shadow-md">
+                    <img
+                      src={topParticipants[2].photo_thumbnail_key || topParticipants[2].photo_original_key}
+                      alt=""
+                      aria-hidden="true"
+                      className="absolute inset-0 w-full h-full object-cover blur-md opacity-40"
+                    />
+                    <img
+                      src={topParticipants[2].photo_original_key}
+                      alt={topParticipants[2].costume_title}
+                      className="relative z-10 max-h-full max-w-full object-contain p-1"
+                    />
+                  </div>
                   <div>
                     <h3 className="font-display font-bold text-lg text-white truncate">
                       {topParticipants[2].costume_title}
@@ -397,35 +495,46 @@ export const LiveProjector: React.FC = () => {
             </div>
           </div>
         ) : participant ? (
-          /* Stage Active Participant View */
+          /* Stage Active Participant View - Dual-layer Smart Image Display */
           <div className="w-full max-w-7xl grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
-            {/* Left: Costume Photo */}
+            {/* Left: Costume Photo - 100% Uncropped Dual Layer */}
             <div className="lg:col-span-5 flex justify-center">
-              <div className="relative w-full max-w-md aspect-[3/4] rounded-3xl overflow-hidden border-2 border-halloween-purple/50 shadow-glow-purple bg-[#121528] group">
+              <div className="relative w-full max-w-lg h-[460px] sm:h-[540px] rounded-3xl overflow-hidden border-2 border-halloween-purple/60 shadow-[0_0_50px_rgba(139,92,246,0.35)] bg-[#080A12] flex items-center justify-center group">
+                {/* Ambient Blurred Background (Matches costume palette) */}
+                <img
+                  src={participant.photo_thumbnail_key || participant.photo_original_key}
+                  alt=""
+                  aria-hidden="true"
+                  className="absolute inset-0 w-full h-full object-cover blur-2xl opacity-40 scale-110 pointer-events-none select-none transition-all duration-700"
+                />
+
+                {/* Foreground: Complete Uncropped Costume Photo */}
                 <img
                   src={participant.photo_original_key}
                   alt={participant.costume_title}
-                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                  className="relative z-10 max-h-full max-w-full object-contain p-3 drop-shadow-[0_20px_35px_rgba(0,0,0,0.9)] transition-transform duration-500 group-hover:scale-[1.02]"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#080A12] via-transparent to-transparent opacity-80" />
+
+                {/* Soft Bottom Vignette */}
+                <div className="absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-[#080A12]/95 via-[#080A12]/60 to-transparent z-15 pointer-events-none" />
 
                 {/* Participant Number Badge */}
-                <div className="absolute top-4 left-4 px-4 py-1.5 rounded-2xl bg-[#080A12]/90 border border-halloween-orange/60 text-white font-mono font-black text-lg shadow-lg flex items-center gap-2">
+                <div className="absolute top-4 left-4 z-20 px-3.5 py-1.5 rounded-2xl bg-[#080A12]/90 border border-halloween-orange/60 text-white font-mono font-black text-lg shadow-lg flex items-center gap-2 backdrop-blur-md">
                   <span className="text-halloween-orange">#</span>
                   <span>{String(participant.contest_number).padStart(2, '0')}</span>
                 </div>
 
                 {/* Category Pill */}
-                <div className="absolute top-4 right-4 px-3 py-1 rounded-xl bg-halloween-purple/80 text-white text-xs font-bold uppercase tracking-wider shadow-md">
+                <div className="absolute top-4 right-4 z-20 px-3.5 py-1.5 rounded-xl bg-halloween-purple/90 border border-purple-400/40 text-white text-xs font-bold uppercase tracking-wider shadow-md backdrop-blur-md">
                   {participant.participant_type === 'student' ? 'Estudiante FMVZ' : 'Trabajador FMVZ'}
                 </div>
 
                 {/* Bottom title overlay */}
-                <div className="absolute bottom-6 left-6 right-6">
-                  <h2 className="font-display font-black text-2xl sm:text-3xl text-white">
+                <div className="absolute bottom-4 left-5 right-5 z-20">
+                  <h2 className="font-display font-black text-2xl sm:text-3xl text-white drop-shadow-md truncate">
                     {participant.costume_title}
                   </h2>
-                  <p className="text-sm text-halloween-lavender mt-1">
+                  <p className="text-sm text-halloween-lavender drop-shadow truncate mt-0.5">
                     Por {participant.public_display_name}
                   </p>
                 </div>
@@ -516,60 +625,122 @@ export const LiveProjector: React.FC = () => {
               ) : (
                 <div className="glass-panel p-6 sm:p-8 rounded-3xl border border-halloween-border text-center space-y-4">
                   <div className="w-12 h-12 mx-auto rounded-2xl bg-halloween-purple/20 text-halloween-lavender flex items-center justify-center">
-                    <Sparkles className="w-6 h-6" />
+                    <Sparkles className="w-6 h-6 text-halloween-orange" />
                   </div>
                   <div>
                     <h3 className="font-display font-bold text-xl text-white">
-                      Preparando al concursante
+                      Participante en Pasarela
                     </h3>
-                    <p className="text-xs text-halloween-muted mt-1">
-                      El jurado y el público observan la pasarela. En breve se abrirá el botón de votación en sus teléfonos.
+                    <p className="text-xs text-halloween-muted mt-1 max-w-md mx-auto">
+                      El jurado y el público observan el disfraz. En unos momentos el moderador abrirá el botón de votación en sus celulares.
                     </p>
                   </div>
                 </div>
               )}
+
+              {/* Side Live QR Card for Audience Scanning in Auditorium */}
+              <div className="p-4 rounded-2xl bg-[#0B0E1E] border border-halloween-border flex items-center justify-between gap-4">
+                <div className="space-y-1">
+                  <span className="text-[11px] font-bold text-halloween-orange uppercase tracking-wider block">
+                    ¿Estás en el público?
+                  </span>
+                  <p className="text-xs text-white font-medium">
+                    Escanea para votar por este disfraz en tiempo real
+                  </p>
+                  <span className="font-mono text-[11px] text-halloween-lavender block">
+                    {voterUrl}
+                  </span>
+                </div>
+
+                <div className="p-2 bg-white rounded-xl shadow-lg border-2 border-halloween-orange flex-shrink-0">
+                  <CustomQrWithLogo
+                    size={110}
+                    showLogo={false}
+                    showActions={false}
+                    url={voterUrl}
+                  />
+                </div>
+              </div>
             </div>
           </div>
         ) : (
-          /* Waiting Stage / Contest Opening */
-          <div className="text-center space-y-6 max-w-2xl animate-fade-in">
+          /* Waiting Stage / Contest Opening - Big High Contrast Auditorium QR Showcase */
+          <div className="text-center space-y-8 max-w-3xl animate-fade-in py-6">
             <div className="w-20 h-20 rounded-3xl bg-halloween-purple/20 text-halloween-lavender flex items-center justify-center mx-auto border border-halloween-purple/40 shadow-glow-purple">
-              <Sparkles className="w-10 h-10 text-halloween-orange" />
+              <Sparkles className="w-10 h-10 text-halloween-orange animate-spin-slow" />
             </div>
-            <h1 className="font-display font-black text-4xl sm:text-6xl text-white">
-              Segundo Concurso de Disfraces FMVZ
-            </h1>
-            <p className="text-lg text-halloween-lavender">
-              El evento comenzará en unos momentos. ¡Prepara tu teléfono para votar por tus participantes favoritos!
-            </p>
+
+            <div className="space-y-3">
+              <span className="px-4 py-1 rounded-full bg-halloween-orange/20 border border-halloween-orange/40 text-halloween-orange text-xs font-bold uppercase tracking-wider inline-block">
+                FMVZ UNAM · Segundo Concurso de Disfraces
+              </span>
+              <h1 className="font-display font-black text-4xl sm:text-6xl text-white">
+                ¡Prepara tu Celular para Votar!
+              </h1>
+              <p className="text-base sm:text-lg text-halloween-lavender max-w-xl mx-auto">
+                Escanea el código QR en pantalla para ingresar a la votación en tiempo real. Calificarás a cada participante en cuanto suba a la pasarela.
+              </p>
+            </div>
+
+            {/* Giant Crisp White QR Card for Instant Audience Scanning */}
+            <div className="glass-panel p-6 sm:p-8 rounded-3xl border-2 border-halloween-orange shadow-[0_0_60px_rgba(255,116,23,0.45)] max-w-md mx-auto space-y-4 bg-gradient-to-b from-[#18122B] to-[#0A0D1B]">
+              <div className="p-3 bg-white rounded-2xl shadow-2xl mx-auto inline-block border-4 border-amber-400">
+                <CustomQrWithLogo
+                  size={240}
+                  showLogo={true}
+                  showActions={false}
+                  url={voterUrl}
+                />
+              </div>
+
+              <div className="space-y-1">
+                <strong className="text-sm font-mono text-halloween-orange block">
+                  {voterUrl}
+                </strong>
+                <span className="text-xs text-halloween-muted block">
+                  Abre la cámara de tu celular y apunta hacia este código
+                </span>
+              </div>
+
+              <div className="pt-2 flex items-center justify-center gap-2 text-xs font-semibold text-emerald-400 bg-emerald-950/40 p-2.5 rounded-xl border border-emerald-500/40">
+                <Users className="w-4 h-4" />
+                <span>{state.connected_clients} espectadores conectados listos para votar</span>
+              </div>
+            </div>
           </div>
         )}
       </main>
 
-      {/* Floating Bottom QR Code Widget for Audience to Scan */}
-      <footer className="px-6 py-4 border-t border-halloween-border/60 bg-[#0A0D1B]/90 backdrop-blur-md flex items-center justify-between z-30">
-        <div className="flex items-center gap-4">
-          <div className="hidden sm:block">
-            <span className="font-display font-bold text-sm text-white block">
-              ¿Estás en el público?
+      {/* Floating Bottom Footer with Permanent Audience QR */}
+      <footer className="px-6 py-3 border-t border-halloween-border/60 bg-[#0A0D1B]/95 backdrop-blur-md flex items-center justify-between z-30">
+        <div className="flex items-center gap-3">
+          <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping hidden sm:block" />
+          <div>
+            <span className="font-display font-bold text-xs sm:text-sm text-white block">
+              Votación en Vivo · Kahoot Mode FMVZ
             </span>
-            <span className="text-xs text-halloween-muted">
-              Escanea con tu cámara para ingresar a la votación sincronizada
+            <span className="text-[11px] text-halloween-muted">
+              Auditorio de la Facultad de Medicina Veterinaria y Zootecnia
             </span>
           </div>
         </div>
 
         {/* Mini QR Card for stage footer */}
-        <div className="flex items-center gap-4">
-          <div className="font-mono text-xs text-halloween-orange font-bold text-right hidden sm:block">
-            {window.location.origin}/votar
+        <div className="flex items-center gap-3">
+          <div className="text-right hidden sm:block">
+            <span className="text-[10px] text-halloween-muted block uppercase tracking-wider font-bold">
+              Escanea con tu celular
+            </span>
+            <span className="font-mono text-xs text-halloween-orange font-bold">
+              {voterUrl}
+            </span>
           </div>
-          <div className="p-1.5 bg-white rounded-xl shadow-md border-2 border-halloween-orange/60">
+          <div className="p-1 bg-white rounded-xl shadow-md border-2 border-halloween-orange/60">
             <CustomQrWithLogo
-              size={70}
-              showLogo={true}
+              size={65}
+              showLogo={false}
               showActions={false}
-              url={`${window.location.origin}/votar`}
+              url={voterUrl}
             />
           </div>
         </div>

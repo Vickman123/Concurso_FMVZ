@@ -5,11 +5,17 @@ import { normalizeIdentifier } from '../utils/validation';
 // Real-time SSE Clients Pool
 const sseClients = new Set<Response>();
 
+// Timer reference for Kahoot auto-closing voting
+let liveVotingTimer: NodeJS.Timeout | null = null;
+
 export function broadcastLiveEvent(eventType: string, data: any) {
   const payload = `event: ${eventType}\ndata: ${JSON.stringify(data)}\n\n`;
   for (const client of sseClients) {
     try {
       client.write(payload);
+      if (typeof (client as any).flush === 'function') {
+        (client as any).flush();
+      }
     } catch (e) {
       sseClients.delete(client);
     }
@@ -21,6 +27,9 @@ setInterval(() => {
   for (const client of sseClients) {
     try {
       client.write(':ping\n\n');
+      if (typeof (client as any).flush === 'function') {
+        (client as any).flush();
+      }
     } catch {
       sseClients.delete(client);
     }
@@ -32,22 +41,38 @@ export async function streamLiveEvents(req: Request, res: Response): Promise<voi
     'Content-Type': 'text/event-stream',
     'Cache-Control': 'no-cache, no-transform',
     'Connection': 'keep-alive',
+    'X-Accel-Buffering': 'no', // Critical for Render reverse proxy to prevent SSE buffering
     'Access-Control-Allow-Origin': '*',
   });
+
+  if (typeof (res as any).flushHeaders === 'function') {
+    (res as any).flushHeaders();
+  }
+
   res.write(':connected\n\n');
+  if (typeof (res as any).flush === 'function') {
+    (res as any).flush();
+  }
 
   sseClients.add(res);
+
+  // Broadcast updated viewer count to projector and audience
+  broadcastLiveEvent('VIEWER_JOINED', { connected_clients: sseClients.size });
 
   // Send initial state immediately
   try {
     const state = await fetchCurrentLiveState();
     res.write(`event: INITIAL_STATE\ndata: ${JSON.stringify(state)}\n\n`);
+    if (typeof (res as any).flush === 'function') {
+      (res as any).flush();
+    }
   } catch (err) {
     console.error('[SSE] Failed to send initial state:', err);
   }
 
   req.on('close', () => {
     sseClients.delete(res);
+    broadcastLiveEvent('VIEWER_LEFT', { connected_clients: sseClients.size });
   });
 }
 
@@ -110,14 +135,14 @@ export async function fetchCurrentLiveState() {
   const votersCountRes = await db.query(`SELECT COUNT(*) as count FROM voters`);
   const totalVotersRegistered = parseInt(votersCountRes.rows[0]?.count || '0', 10);
 
-  // 4. All approved participants for switcher and ranking
+  // 4. All participants for switcher and ranking (include approved and pending for testing)
   const allPartsRes = await db.query(`
-    SELECT p.id, p.contest_number, p.public_display_name, p.costume_title, p.photo_thumbnail_key,
+    SELECT p.id, p.contest_number, p.public_display_name, p.costume_title, p.photo_thumbnail_key, p.photo_original_key, p.status,
            COUNT(lv.id) FILTER (WHERE lv.vote_value = 'yes') as live_yes_votes
     FROM participants p
     LEFT JOIN live_votes lv ON p.id = lv.participant_id
-    WHERE p.status = 'approved'
-    GROUP BY p.id, p.contest_number, p.public_display_name, p.costume_title, p.photo_thumbnail_key
+    WHERE p.status IN ('approved', 'pending')
+    GROUP BY p.id, p.contest_number, p.public_display_name, p.costume_title, p.photo_thumbnail_key, p.photo_original_key, p.status
     ORDER BY p.contest_number ASC
   `);
 
@@ -134,7 +159,7 @@ export async function fetchCurrentLiveState() {
       ...r,
       live_yes_votes: parseInt(r.live_yes_votes || '0', 10)
     })),
-    connected_clients: sseClients.size,
+    connected_clients: Math.max(1, sseClients.size),
     updated_at: session.updated_at || new Date().toISOString(),
   };
 }
@@ -165,12 +190,21 @@ export async function adminControlLive(req: Request, res: Response): Promise<voi
         res.status(400).json({ error: 'Se requiere participant_id o contest_number' });
         return;
       }
+      if (liveVotingTimer) {
+        clearTimeout(liveVotingTimer);
+        liveVotingTimer = null;
+      }
       await db.query(`
         UPDATE live_stage_session
         SET current_participant_id = $1, stage_status = 'presenting', updated_at = CURRENT_TIMESTAMP
         WHERE id = 1
       `, [targetParticipantId]);
     } else if (action === 'NEXT_PARTICIPANT' || action === 'PREV_PARTICIPANT') {
+      if (liveVotingTimer) {
+        clearTimeout(liveVotingTimer);
+        liveVotingTimer = null;
+      }
+
       const currentRes = await db.query(`
         SELECT p.contest_number 
         FROM live_stage_session s
@@ -186,11 +220,19 @@ export async function adminControlLive(req: Request, res: Response): Promise<voi
           WHERE status = 'approved' AND contest_number > $1
           ORDER BY contest_number ASC LIMIT 1
         `, [currentNum]);
+
         if (nextRes.rowCount === 0) {
-          // Loop back to first
           nextRes = await db.query(`
             SELECT id, contest_number FROM participants
             WHERE status = 'approved'
+            ORDER BY contest_number ASC LIMIT 1
+          `);
+        }
+
+        if (nextRes.rowCount === 0) {
+          // Fallback to any participant if none are approved yet
+          nextRes = await db.query(`
+            SELECT id, contest_number FROM participants
             ORDER BY contest_number ASC LIMIT 1
           `);
         }
@@ -200,11 +242,18 @@ export async function adminControlLive(req: Request, res: Response): Promise<voi
           WHERE status = 'approved' AND contest_number < $1
           ORDER BY contest_number DESC LIMIT 1
         `, [currentNum]);
+
         if (nextRes.rowCount === 0) {
-          // Loop back to last
           nextRes = await db.query(`
             SELECT id, contest_number FROM participants
             WHERE status = 'approved'
+            ORDER BY contest_number DESC LIMIT 1
+          `);
+        }
+
+        if (nextRes.rowCount === 0) {
+          nextRes = await db.query(`
+            SELECT id, contest_number FROM participants
             ORDER BY contest_number DESC LIMIT 1
           `);
         }
@@ -224,19 +273,51 @@ export async function adminControlLive(req: Request, res: Response): Promise<voi
         SET stage_status = 'voting_open', voting_seconds_left = $1, updated_at = CURRENT_TIMESTAMP
         WHERE id = 1
       `, [votingDuration]);
+
+      // Server-side automatic timer to close voting after time runs out
+      if (liveVotingTimer) clearTimeout(liveVotingTimer);
+      liveVotingTimer = setTimeout(async () => {
+        try {
+          const dbInstance = await getDb();
+          const check = await dbInstance.query('SELECT stage_status FROM live_stage_session WHERE id = 1');
+          if (check.rows[0]?.stage_status === 'voting_open') {
+            await dbInstance.query(`
+              UPDATE live_stage_session
+              SET stage_status = 'voting_closed', voting_seconds_left = 0, updated_at = CURRENT_TIMESTAMP
+              WHERE id = 1
+            `);
+            const closedState = await fetchCurrentLiveState();
+            broadcastLiveEvent('LIVE_STATE_CHANGED', closedState);
+          }
+        } catch (timerErr) {
+          console.error('[Live Auto-close Timer Error]:', timerErr);
+        }
+      }, (votingDuration + 1) * 1000);
     } else if (action === 'CLOSE_VOTING') {
+      if (liveVotingTimer) {
+        clearTimeout(liveVotingTimer);
+        liveVotingTimer = null;
+      }
       await db.query(`
         UPDATE live_stage_session
-        SET stage_status = 'voting_closed', updated_at = CURRENT_TIMESTAMP
+        SET stage_status = 'voting_closed', voting_seconds_left = 0, updated_at = CURRENT_TIMESTAMP
         WHERE id = 1
       `);
     } else if (action === 'SHOW_PODIUM') {
+      if (liveVotingTimer) {
+        clearTimeout(liveVotingTimer);
+        liveVotingTimer = null;
+      }
       await db.query(`
         UPDATE live_stage_session
         SET stage_status = 'podium', updated_at = CURRENT_TIMESTAMP
         WHERE id = 1
       `);
     } else if (action === 'RESET_STAGE') {
+      if (liveVotingTimer) {
+        clearTimeout(liveVotingTimer);
+        liveVotingTimer = null;
+      }
       await db.query(`
         UPDATE live_stage_session
         SET stage_status = 'waiting', current_participant_id = NULL, updated_at = CURRENT_TIMESTAMP

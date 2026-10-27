@@ -98,12 +98,18 @@ export const ParticipantDetail: React.FC = () => {
 
       {/* Main Card */}
       <div className="glass-panel rounded-3xl overflow-hidden border border-halloween-border/90 shadow-card">
-        {/* Full Image */}
-        <div className="relative aspect-[4/5] sm:aspect-[16/11] w-full overflow-hidden bg-gradient-to-b from-[#1E1B4B] to-[#090B14]">
+        {/* Full Image with Dual-Layer Smart Display (No Cropping) */}
+        <div className="relative w-full h-[380px] sm:h-[480px] overflow-hidden bg-[#080A12] flex items-center justify-center">
+          <img
+            src={participant.photo_original_key}
+            alt=""
+            aria-hidden="true"
+            className="absolute inset-0 w-full h-full object-cover blur-2xl opacity-40 scale-110 pointer-events-none"
+          />
           <img
             src={participant.photo_original_key}
             alt={participant.costume_title}
-            className="w-full h-full object-contain sm:object-cover object-center"
+            className="relative z-10 max-h-full max-w-full object-contain p-2 drop-shadow-2xl"
           />
 
           {/* Number badge */}
