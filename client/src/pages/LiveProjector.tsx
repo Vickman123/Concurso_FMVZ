@@ -30,6 +30,7 @@ interface LiveParticipant {
 }
 
 interface LiveState {
+  is_active?: boolean;
   stage_status: 'waiting' | 'presenting' | 'voting_open' | 'voting_closed' | 'podium';
   current_participant_id: number | null;
   current_participant: LiveParticipant | null;
@@ -201,6 +202,61 @@ export const LiveProjector: React.FC = () => {
 
   const participant = state.current_participant;
   const topParticipants = [...state.participants].sort((a, b) => (b.live_yes_votes || 0) - (a.live_yes_votes || 0)).slice(0, 3);
+
+  // If stage is deactivated by admin
+  if (state.is_active === false) {
+    return (
+      <div className="min-h-screen bg-[#080A12] text-halloween-white flex flex-col justify-between overflow-hidden relative select-none p-6">
+        <header className="flex items-center justify-between">
+          <EventLogo size="md" />
+          <div className="px-3 py-1 rounded-full bg-red-600/20 border border-red-500/40 text-red-400 text-xs font-bold uppercase tracking-wider">
+            Escenario Inactivo
+          </div>
+        </header>
+
+        <div className="max-w-lg mx-auto text-center space-y-6 glass-panel rounded-3xl p-8 sm:p-10 border border-halloween-border/80 shadow-2xl">
+          <div className="w-16 h-16 rounded-2xl bg-halloween-purple/20 text-halloween-lavender flex items-center justify-center mx-auto border border-halloween-purple/40">
+            <Radio className="w-8 h-8 text-halloween-orange" />
+          </div>
+
+          <div className="space-y-2">
+            <span className="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-halloween-orange/20 text-halloween-orange border border-halloween-orange/30">
+              Certamen · 3 de Noviembre de 2026
+            </span>
+            <h1 className="font-display font-black text-2xl sm:text-3xl text-white pt-2">
+              Escenario en Vivo en Espera
+            </h1>
+            <p className="text-xs sm:text-sm text-halloween-muted leading-relaxed">
+              La proyección y votación sincronizada en el auditorio de la FMVZ se activará el día oficial del concurso una vez que el comité organizador dé inicio a la pasarela.
+            </p>
+          </div>
+
+          <div className="p-4 rounded-2xl bg-surface-raised border border-halloween-border text-xs text-gray-300">
+            ⏳ Esta pantalla se actualizará automáticamente en cuanto el administrador active el escenario en vivo.
+          </div>
+
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+            <a
+              href="/"
+              className="w-full sm:w-auto px-6 py-2.5 rounded-xl font-bold text-xs text-white bg-surface-raised hover:bg-surface-subtle border border-halloween-border transition-colors text-center"
+            >
+              Volver al inicio
+            </a>
+            <a
+              href="/participantes"
+              className="w-full sm:w-auto px-6 py-2.5 rounded-xl font-bold text-xs text-white bg-halloween-orange hover:bg-halloween-orange-dark transition-colors text-center shadow-glow-orange"
+            >
+              Ver galería de disfraces
+            </a>
+          </div>
+        </div>
+
+        <footer className="text-center text-xs text-gray-500">
+          FMVZ UNAM · Segundo Concurso de Disfraces
+        </footer>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#080A12] text-halloween-white flex flex-col justify-between overflow-hidden relative select-none font-sans">

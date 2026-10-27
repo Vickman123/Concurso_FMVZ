@@ -392,7 +392,7 @@ export async function getAdminResults(req: Request, res: Response): Promise<void
 
 export async function updateContestSettings(req: Request, res: Response): Promise<void> {
   try {
-    const { voting_status, results_publication_status, registration_limit, additional_prizes_method } = req.body;
+    const { voting_status, results_publication_status, registration_limit, additional_prizes_method, is_live_active } = req.body;
     const db = await getDb();
 
     const currentRes = await db.query('SELECT * FROM contest_settings WHERE id = 1');
@@ -402,6 +402,7 @@ export async function updateContestSettings(req: Request, res: Response): Promis
     const newPubStatus = results_publication_status || current.results_publication_status;
     const newLimit = registration_limit ? Number(registration_limit) : current.registration_limit;
     const newAddMethod = additional_prizes_method !== undefined ? additional_prizes_method : current.additional_prizes_method;
+    const newIsLiveActive = is_live_active !== undefined ? Boolean(is_live_active) : Boolean(current.is_live_active);
 
     await db.query(`
       UPDATE contest_settings
@@ -410,9 +411,18 @@ export async function updateContestSettings(req: Request, res: Response): Promis
         results_publication_status = $2,
         registration_limit = $3,
         additional_prizes_method = $4,
+        is_live_active = $5,
         updated_at = CURRENT_TIMESTAMP
       WHERE id = 1
-    `, [newVotingStatus, newPubStatus, newLimit, newAddMethod]);
+    `, [newVotingStatus, newPubStatus, newLimit, newAddMethod, newIsLiveActive]);
+
+    if (is_live_active !== undefined) {
+      await db.query(`
+        UPDATE live_stage_session
+        SET is_active = $1, updated_at = CURRENT_TIMESTAMP
+        WHERE id = 1
+      `, [newIsLiveActive]);
+    }
 
     // Audit log
     await db.query(`

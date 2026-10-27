@@ -38,6 +38,7 @@ export const LiveVoter: React.FC = () => {
   const [authError, setAuthError] = useState<string | null>(null);
 
   // Live Stage State
+  const [isLiveActive, setIsLiveActive] = useState<boolean | null>(null);
   const [stageStatus, setStageStatus] = useState<string>('waiting');
   const [currentParticipant, setCurrentParticipant] = useState<any>(null);
   const [secondsLeft, setSecondsLeft] = useState<number>(30);
@@ -88,6 +89,9 @@ export const LiveVoter: React.FC = () => {
   }, []);
 
   const handleIncomingState = (data: any) => {
+    if (data.is_active !== undefined) {
+      setIsLiveActive(Boolean(data.is_active));
+    }
     setStageStatus(data.stage_status || 'waiting');
     setSecondsLeft(data.voting_seconds_left || 30);
 
@@ -189,6 +193,54 @@ export const LiveVoter: React.FC = () => {
       });
     } catch {}
   };
+
+  // If stage is deactivated by admin
+  if (isLiveActive === false) {
+    return (
+      <div className="min-h-screen bg-[#080A12] text-halloween-white p-4 flex flex-col justify-center items-center">
+        <div className="w-full max-w-md space-y-6 text-center">
+          <EventLogo size="md" className="mx-auto justify-center" />
+
+          <div className="glass-panel p-6 sm:p-8 rounded-3xl border border-halloween-border shadow-2xl space-y-5">
+            <div className="w-14 h-14 rounded-2xl bg-halloween-orange/20 text-halloween-orange flex items-center justify-center mx-auto border border-halloween-orange/30">
+              <Radio className="w-7 h-7" />
+            </div>
+
+            <div>
+              <span className="px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider bg-red-600/20 text-red-400 border border-red-500/30">
+                Escenario en Pausa
+              </span>
+              <h1 className="font-display font-black text-xl text-white mt-3">
+                Votación en Vivo No Disponible Aún
+              </h1>
+              <p className="text-xs text-halloween-muted mt-2 leading-relaxed">
+                El modo escenario y votación sincronizada en la pasarela será activado por los moderadores el día oficial del evento: <strong>3 de noviembre de 2026</strong>.
+              </p>
+            </div>
+
+            <div className="p-3.5 rounded-2xl bg-surface-raised border border-halloween-border text-xs text-gray-300">
+              Puedes emitir tu voto formal y explorar todos los disfraces en la galería pública.
+            </div>
+
+            <div className="space-y-2 pt-2">
+              <a
+                href="/participantes"
+                className="w-full block py-3 rounded-xl font-bold text-xs text-white bg-gradient-to-r from-halloween-orange to-amber-600 shadow-glow-orange hover:brightness-110 transition-all text-center"
+              >
+                Ver Galería y Votar
+              </a>
+              <a
+                href="/"
+                className="w-full block py-2.5 rounded-xl font-semibold text-xs text-gray-300 hover:text-white bg-surface-raised border border-halloween-border transition-colors text-center"
+              >
+                Volver al Inicio
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // 1. Identification Screen if user hasn't identified
   if (!voter) {

@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS contest_settings (
   voting_end TIMESTAMP WITH TIME ZONE,
   results_publication_status VARCHAR(50) NOT NULL DEFAULT 'hidden' CHECK (results_publication_status IN ('hidden', 'published')),
   additional_prizes_method TEXT DEFAULT 'Modalidad por definir en las bases oficiales',
+  is_live_active BOOLEAN NOT NULL DEFAULT FALSE,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -87,6 +88,7 @@ CREATE TABLE IF NOT EXISTS live_stage_session (
   current_participant_id INT REFERENCES participants(id) ON DELETE SET NULL,
   voting_seconds_left INT DEFAULT 30,
   total_cheers INT DEFAULT 0,
+  is_active BOOLEAN NOT NULL DEFAULT FALSE,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -115,4 +117,8 @@ CREATE INDEX IF NOT EXISTS idx_votes_confirmation_folio ON votes(confirmation_fo
 CREATE INDEX IF NOT EXISTS idx_audit_logs_timestamp ON audit_logs(timestamp DESC);
 CREATE INDEX IF NOT EXISTS idx_live_votes_participant ON live_votes(participant_id);
 CREATE INDEX IF NOT EXISTS idx_live_reactions_created ON live_reactions(created_at DESC);
+
+-- Automatic migrations for columns if table previously created
+ALTER TABLE contest_settings ADD COLUMN IF NOT EXISTS is_live_active BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE live_stage_session ADD COLUMN IF NOT EXISTS is_active BOOLEAN NOT NULL DEFAULT FALSE;
 

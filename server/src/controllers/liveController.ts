@@ -56,7 +56,7 @@ export async function fetchCurrentLiveState() {
 
   // 1. Get stage session
   const sessionRes = await db.query(`
-    SELECT stage_status, current_participant_id, voting_seconds_left, total_cheers, updated_at
+    SELECT stage_status, current_participant_id, voting_seconds_left, total_cheers, updated_at, is_active
     FROM live_stage_session
     WHERE id = 1
   `);
@@ -65,11 +65,11 @@ export async function fetchCurrentLiveState() {
   if (!session) {
     // If not exists, insert default
     await db.query(`
-      INSERT INTO live_stage_session (id, stage_status, voting_seconds_left, total_cheers)
-      VALUES (1, 'waiting', 30, 0)
+      INSERT INTO live_stage_session (id, stage_status, voting_seconds_left, total_cheers, is_active)
+      VALUES (1, 'waiting', 30, 0, false)
       ON CONFLICT (id) DO NOTHING
     `);
-    session = { stage_status: 'waiting', current_participant_id: null, voting_seconds_left: 30, total_cheers: 0 };
+    session = { stage_status: 'waiting', current_participant_id: null, voting_seconds_left: 30, total_cheers: 0, is_active: false };
   }
 
   // 2. Current participant info
@@ -122,6 +122,7 @@ export async function fetchCurrentLiveState() {
   `);
 
   return {
+    is_active: Boolean(session.is_active),
     stage_status: session.stage_status,
     current_participant_id: session.current_participant_id,
     current_participant: currentParticipant,
@@ -241,6 +242,22 @@ export async function adminControlLive(req: Request, res: Response): Promise<voi
         SET stage_status = 'waiting', current_participant_id = NULL, updated_at = CURRENT_TIMESTAMP
         WHERE id = 1
       `);
+    } else if (action === 'TOGGLE_LIVE_ACTIVE' || action === 'SET_LIVE_ACTIVE') {
+      const currentActiveRes = await db.query('SELECT is_active FROM live_stage_session WHERE id = 1');
+      const currentActive = Boolean(currentActiveRes.rows[0]?.is_active);
+      const newActive = req.body.is_active !== undefined ? Boolean(req.body.is_active) : !currentActive;
+
+      await db.query(`
+        UPDATE live_stage_session
+        SET is_active = $1, updated_at = CURRENT_TIMESTAMP
+        WHERE id = 1
+      `, [newActive]);
+
+      await db.query(`
+        UPDATE contest_settings
+        SET is_live_active = $1, updated_at = CURRENT_TIMESTAMP
+        WHERE id = 1
+      `, [newActive]);
     } else {
       res.status(400).json({ error: 'Acción no reconocida' });
       return;
@@ -270,13 +287,13 @@ export async function castLiveVote(req: Request, res: Response): Promise<void> {
     const db = await getDb();
 
     // Check stage session
-    const sessionRes = await db.query('SELECT stage_status, current_participant_id FROM live_stage_session WHERE id = 1');
+    const sessionRes = await db.query('SELECT stage_status, current_participant_id, is_active FROM live_stage_session WHERE id = 1');
     const session = sessionRes.rows[0];
 
-    if (!session || session.stage_status !== 'voting_open' || !session.current_participant_id) {
+    if (!session || !session.is_active || session.stage_status !== 'voting_open' || !session.current_participant_id) {
       res.status(403).json({
         error: 'VOTING_NOT_OPEN',
-        message: 'La votación no está abierta para el participante en el escenario en este momento.',
+        message: 'El escenario en vivo no está activo o la votación no está abierta en este momento.',
       });
       return;
     }

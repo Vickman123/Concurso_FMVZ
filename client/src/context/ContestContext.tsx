@@ -10,6 +10,7 @@ interface ContestContextType {
   lastVoteReceipt: VoteReceipt | null;
   setLastVoteReceipt: (receipt: VoteReceipt | null) => void;
   isVotingOpen: boolean;
+  isLiveActive: boolean;
 }
 
 const ContestContext = createContext<ContestContextType | undefined>(undefined);
@@ -63,9 +64,13 @@ export const ContestProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   useEffect(() => {
     refreshSettings();
+    // Periodically sync contest settings (e.g. when admin opens/closes stage or voting)
+    const interval = setInterval(refreshSettings, 10000);
+    return () => clearInterval(interval);
   }, []);
 
   const isVotingOpen = settings?.voting_status === 'open';
+  const isLiveActive = Boolean(settings?.is_live_active);
 
   return (
     <ContestContext.Provider
@@ -78,6 +83,7 @@ export const ContestProvider: React.FC<{ children: React.ReactNode }> = ({ child
         lastVoteReceipt,
         setLastVoteReceipt,
         isVotingOpen,
+        isLiveActive,
       }}
     >
       {children}

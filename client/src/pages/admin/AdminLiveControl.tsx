@@ -28,6 +28,7 @@ interface LiveParticipant {
 }
 
 interface LiveState {
+  is_active?: boolean;
   stage_status: 'waiting' | 'presenting' | 'voting_open' | 'voting_closed' | 'podium';
   current_participant_id: number | null;
   current_participant: any;
@@ -164,6 +165,61 @@ export const AdminLiveControl: React.FC = () => {
           <ExternalLink className="w-4 h-4" />
           <span>Abrir Pantalla de Proyección (Visor)</span>
         </a>
+      </div>
+
+      {/* Master Public Visibility & Activation Control */}
+      <div
+        className={`p-5 rounded-3xl border transition-all ${
+          state.is_active
+            ? 'bg-emerald-950/30 border-emerald-500/50 shadow-glow-orange'
+            : 'bg-[#15182A] border-halloween-border/90'
+        }`}
+      >
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-start gap-3">
+            <div
+              className={`p-3 rounded-2xl flex-shrink-0 ${
+                state.is_active ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/10 text-red-400'
+              }`}
+            >
+              <Radio className={`w-6 h-6 ${state.is_active ? 'animate-pulse' : ''}`} />
+            </div>
+            <div className="space-y-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="font-display font-bold text-base text-white">
+                  Visibilidad Pública del Escenario:
+                </span>
+                <span
+                  className={`px-2.5 py-0.5 rounded-full text-xs font-black uppercase ${
+                    state.is_active
+                      ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
+                      : 'bg-red-500/20 text-red-400 border border-red-500/40'
+                  }`}
+                >
+                  {state.is_active ? '🟢 ACTIVO Y VISIBLE AL PÚBLICO' : '🔴 INACTIVO (OCULTO AL PÚBLICO)'}
+                </span>
+              </div>
+              <p className="text-xs text-halloween-muted max-w-2xl leading-relaxed">
+                {state.is_active
+                  ? 'El Escenario en Vivo se encuentra activo y visible en la barra de navegación. Los asistentes pueden votar en tiempo real.'
+                  : 'El Escenario en Vivo está reservado para el 3 de noviembre de 2026. Permanece oculto en el menú principal y formularios hasta que lo actives aquí.'}
+              </p>
+            </div>
+          </div>
+
+          <button
+            onClick={() => sendControlAction({ action: 'TOGGLE_LIVE_ACTIVE', is_active: !state.is_active })}
+            disabled={actionLoading}
+            className={`px-5 py-3 rounded-2xl font-bold text-xs sm:text-sm text-white shadow-md transition-all flex items-center justify-center gap-2 flex-shrink-0 ${
+              state.is_active
+                ? 'bg-red-600 hover:bg-red-700 shadow-glow-orange'
+                : 'bg-gradient-to-r from-emerald-600 to-emerald-500 hover:brightness-110 shadow-glow-purple'
+            }`}
+          >
+            <Radio className="w-4 h-4" />
+            <span>{state.is_active ? 'Desactivar Escenario (Ocultar)' : 'Activar Escenario en Vivo'}</span>
+          </button>
+        </div>
       </div>
 
       {/* Live Stage Status Dashboard */}

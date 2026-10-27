@@ -25,6 +25,7 @@ export async function getContestSettings(req: Request, res: Response): Promise<v
       voting_end: settings.voting_end,
       results_publication_status: settings.results_publication_status,
       additional_prizes_method: settings.additional_prizes_method,
+      is_live_active: Boolean(settings.is_live_active),
       total_registered: Number(counts.total_registered),
       approved_count: Number(counts.approved_count),
     });

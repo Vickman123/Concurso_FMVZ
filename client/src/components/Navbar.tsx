@@ -13,12 +13,12 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenQr }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isAudioActive, setIsAudioActive] = useState(false);
   const location = useLocation();
-  const { isVotingOpen } = useContest();
+  const { isVotingOpen, isLiveActive } = useContest();
 
   const navLinks = [
     { label: 'Inicio', path: '/' },
     { label: 'Participantes', path: '/participantes' },
-    { label: 'Escenario en Vivo', path: '/en-vivo' },
+    ...(isLiveActive ? [{ label: 'Escenario en Vivo', path: '/en-vivo' }] : []),
     { label: 'Registrar mi disfraz', path: '/registrar' },
     { label: 'Premios', path: '/premios' },
     { label: 'Preguntas frecuentes', path: '/preguntas-frecuentes' },
@@ -94,14 +94,16 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenQr }) => {
               </button>
             )}
 
-            <Link
-              to="/en-vivo"
-              title="Escenario de votación sincronizada en vivo (Modo Kahoot)"
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-red-600/20 border border-red-500/40 text-red-400 hover:bg-red-600/30 text-xs font-bold transition-all shadow-sm animate-pulse"
-            >
-              <Radio className="w-3.5 h-3.5" />
-              <span>En Vivo</span>
-            </Link>
+            {isLiveActive && (
+              <Link
+                to="/en-vivo"
+                title="Escenario de votación sincronizada en vivo (Modo Kahoot)"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-red-600/20 border border-red-500/40 text-red-400 hover:bg-red-600/30 text-xs font-bold transition-all shadow-sm animate-pulse"
+              >
+                <Radio className="w-3.5 h-3.5" />
+                <span>En Vivo</span>
+              </Link>
+            )}
 
             {isVotingOpen ? (
               <Link

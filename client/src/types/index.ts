@@ -25,6 +25,7 @@ export interface ContestSettings {
   voting_end: string | null;
   results_publication_status: 'hidden' | 'published';
   additional_prizes_method: string;
+  is_live_active?: boolean;
   total_registered: number;
   approved_count: number;
 }

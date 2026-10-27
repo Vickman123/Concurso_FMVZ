@@ -7,6 +7,7 @@ export const AdminSettings: React.FC = () => {
   const { token, admin } = useAuth();
 
   const [votingStatus, setVotingStatus] = useState('open');
+  const [isLiveActive, setIsLiveActive] = useState(false);
   const [regLimit, setRegLimit] = useState(100);
   const [additionalMethod, setAdditionalMethod] = useState('');
   const [loading, setLoading] = useState(true);
@@ -20,6 +21,7 @@ export const AdminSettings: React.FC = () => {
       if (res.ok) {
         const data = await res.json();
         setVotingStatus(data.voting_status || 'open');
+        setIsLiveActive(Boolean(data.is_live_active));
         setRegLimit(data.registration_limit || 100);
         setAdditionalMethod(data.additional_prizes_method || '');
       }
@@ -57,6 +59,7 @@ export const AdminSettings: React.FC = () => {
         },
         body: JSON.stringify({
           voting_status: votingStatus,
+          is_live_active: isLiveActive,
           registration_limit: Number(regLimit),
           additional_prizes_method: additionalMethod,
         }),
@@ -111,6 +114,25 @@ export const AdminSettings: React.FC = () => {
                 <option value="closed">🔴 Cerrada (Votación finalizada para cómputo de resultados)</option>
                 <option value="upcoming">⏳ Próxima (Previo a la apertura oficial)</option>
               </select>
+            </div>
+
+            {/* Live Stage Public Visibility */}
+            <div>
+              <label className="block text-gray-300 font-semibold mb-1.5">
+                Escenario en Vivo (Pasarela Sincrónica 3 de Noviembre)
+              </label>
+              <select
+                value={isLiveActive ? 'active' : 'inactive'}
+                onChange={(e) => setIsLiveActive(e.target.value === 'active')}
+                disabled={admin?.role !== 'admin'}
+                className="w-full px-4 py-3 rounded-xl bg-surface-raised border border-halloween-border text-white text-xs font-semibold focus:outline-none focus:border-halloween-purple disabled:opacity-50"
+              >
+                <option value="inactive">🔴 Inactivo (Oculto al público hasta el 3 de noviembre)</option>
+                <option value="active">🟢 Activo (Visible en barra de navegación y habilitado para el público)</option>
+              </select>
+              <span className="text-[11px] text-halloween-muted mt-1 block">
+                Solo debe activarse el día oficial del evento (3 de noviembre de 2026) cuando comience la pasarela en el auditorio.
+              </span>
             </div>
 
             {/* Capacity Limit */}

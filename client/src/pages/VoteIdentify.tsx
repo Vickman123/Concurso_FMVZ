@@ -8,7 +8,7 @@ export const VoteIdentify: React.FC = () => {
   const [searchParams] = useSearchParams();
   const returnTo = searchParams.get('returnTo');
 
-  const { voterIdentity, setVoterIdentity, isVotingOpen } = useContest();
+  const { voterIdentity, setVoterIdentity, isVotingOpen, isLiveActive } = useContest();
 
   const [voterType, setVoterType] = useState<'student' | 'worker'>('student');
   const [fullName, setFullName] = useState(voterIdentity?.full_name || '');
@@ -98,20 +98,22 @@ export const VoteIdentify: React.FC = () => {
   return (
     <div className="max-w-xl mx-auto px-4 sm:px-6 py-8 sm:py-12 safe-bottom">
       {/* Live Stage Banner */}
-      <div className="mb-6 p-4 rounded-2xl bg-gradient-to-r from-red-950/40 via-purple-950/40 to-red-950/40 border border-red-500/40 text-center space-y-2 shadow-glow-purple">
-        <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-red-600/30 text-red-300 text-[10px] font-black uppercase tracking-wider animate-pulse">
-          <span>● MODO ESCENARIO EN VIVO</span>
+      {isLiveActive && (
+        <div className="mb-6 p-4 rounded-2xl bg-gradient-to-r from-red-950/40 via-purple-950/40 to-red-950/40 border border-red-500/40 text-center space-y-2 shadow-glow-purple">
+          <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-red-600/30 text-red-300 text-[10px] font-black uppercase tracking-wider animate-pulse">
+            <span>● MODO ESCENARIO EN VIVO</span>
+          </div>
+          <p className="text-xs text-white font-medium">
+            ¿Estás presente en el auditorio de la FMVZ? Participa en la votación sincronizada con la pasarela.
+          </p>
+          <Link
+            to="/votar/en-vivo"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-halloween-orange hover:bg-halloween-orange-dark text-white font-bold text-xs shadow-glow-orange transition-all"
+          >
+            <span>Entrar a Votación en Vivo Sincronizada ➔</span>
+          </Link>
         </div>
-        <p className="text-xs text-white font-medium">
-          ¿Estás presente en el auditorio de la FMVZ? Participa en la votación sincronizada con la pasarela.
-        </p>
-        <Link
-          to="/votar/en-vivo"
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-halloween-orange hover:bg-halloween-orange-dark text-white font-bold text-xs shadow-glow-orange transition-all"
-        >
-          <span>Entrar a Votación en Vivo Sincronizada ➔</span>
-        </Link>
-      </div>
+      )}
 
       <div className="text-center mb-8">
         <div className="w-12 h-12 rounded-2xl bg-halloween-orange/20 text-halloween-orange flex items-center justify-center mx-auto mb-3 shadow-glow-orange">

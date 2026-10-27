@@ -56,7 +56,7 @@ export const Faq: React.FC = () => {
   return (
     <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-14 safe-bottom">
       {/* Header */}
-      <div className="text-center mb-10">
+      <div id="bases" className="text-center mb-10 scroll-mt-24">
         <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-halloween-purple/20 text-halloween-lavender text-xs font-semibold mb-2">
           <HelpCircle className="w-3.5 h-3.5 text-halloween-orange" />
           <span>Centro de Ayuda</span>
