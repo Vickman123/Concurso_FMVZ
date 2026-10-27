@@ -9,6 +9,7 @@ export const AdminSettings: React.FC = () => {
   const [votingStatus, setVotingStatus] = useState('open');
   const [isLiveActive, setIsLiveActive] = useState(false);
   const [regLimit, setRegLimit] = useState(100);
+  const [totalRegistered, setTotalRegistered] = useState(0);
   const [additionalMethod, setAdditionalMethod] = useState('');
   const [loading, setLoading] = useState(true);
   const [savedSuccess, setSavedSuccess] = useState(false);
@@ -23,6 +24,7 @@ export const AdminSettings: React.FC = () => {
         setVotingStatus(data.voting_status || 'open');
         setIsLiveActive(Boolean(data.is_live_active));
         setRegLimit(data.registration_limit || 100);
+        setTotalRegistered(data.total_registered || 0);
         setAdditionalMethod(data.additional_prizes_method || '');
       }
 
@@ -142,15 +144,15 @@ export const AdminSettings: React.FC = () => {
               </label>
               <input
                 type="number"
-                min={57}
-                max={150}
+                min={1}
+                max={500}
                 value={regLimit}
                 onChange={(e) => setRegLimit(Number(e.target.value))}
                 disabled={admin?.role !== 'admin'}
                 className="w-full px-4 py-3 rounded-xl bg-surface-raised border border-halloween-border text-white font-mono text-xs disabled:opacity-50"
               />
               <span className="text-[11px] text-halloween-muted mt-1 block">
-                Objetivo institucional: 100 participantes (57 registros activos actualmente).
+                Objetivo institucional: 100 participantes ({totalRegistered} registros activos actualmente).
               </span>
             </div>
 

@@ -150,7 +150,15 @@ export async function getAdminParticipants(req: Request, res: Response): Promise
       )`;
     }
 
-    queryText += ' ORDER BY contest_number ASC';
+    queryText += ` ORDER BY 
+      CASE 
+        WHEN status = 'pending' THEN 0 
+        WHEN status = 'needs_correction' THEN 1 
+        WHEN status = 'approved' THEN 2
+        ELSE 3 
+      END ASC,
+      created_at DESC,
+      contest_number ASC`;
 
     const result = await db.query(queryText, params);
     res.json({ participants: result.rows, total: result.rowCount });

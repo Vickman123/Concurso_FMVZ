@@ -107,7 +107,8 @@ export const Home: React.FC = () => {
     return true;
   });
 
-  const totalRegistered = settings?.total_registered || 57;
+  const totalRegistered = settings?.total_registered ?? 0;
+  const approvedCount = settings?.approved_count ?? 0;
   const registrationLimit = settings?.registration_limit || 100;
   const registrationPercent = Math.min(
     100,
@@ -182,18 +183,26 @@ export const Home: React.FC = () => {
               className="hero-actions-container mt-8 flex flex-col sm:flex-row items-center gap-3 sm:gap-4 w-full sm:w-auto"
             >
               <Link
-                to="/participantes"
-                className="hero-action-btn w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-8 py-3.5 rounded-2xl font-bold text-base text-white bg-gradient-to-r from-[#FF7417] via-[#FF8526] to-[#FF9A24] hover:brightness-110 shadow-[0_4px_25px_rgba(255,116,23,0.45)] transition-all duration-300 transform hover:-translate-y-0.5 active:scale-95"
+                to="/registrar"
+                className="hero-action-btn w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-8 py-3.5 rounded-2xl font-bold text-base text-white bg-gradient-to-r from-[#FF7417] via-[#FF8526] to-[#FF9A24] hover:brightness-110 shadow-[0_4px_30px_rgba(255,116,23,0.55)] transition-all duration-300 transform hover:-translate-y-0.5 active:scale-95"
               >
-                <span>⭐ Ver participantes</span>
-                <ArrowRight className="w-4 h-4" />
+                <PlusCircle className="w-5 h-5 text-white" />
+                <span>Registrar mi disfraz</span>
+                <span className="hidden sm:inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-black/25 text-[#FFF]">
+                  ¡Inscríbete!
+                </span>
               </Link>
               <Link
-                to="/registrar"
+                to="/participantes"
                 className="hero-action-btn w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-7 py-3.5 rounded-2xl font-semibold text-base text-[#F7F4F0] bg-[#15182A] hover:bg-[#1C1F38] border border-[#282B47] hover:border-[#8B5CF6]/50 transition-all duration-200"
               >
-                <PlusCircle className="w-4 h-4 text-[#B79AFF]" />
-                <span>Registrar mi disfraz</span>
+                <span>⭐ Ver disfraces</span>
+                {approvedCount > 0 && (
+                  <span className="text-xs px-2 py-0.5 rounded-full bg-[#282B47] text-[#FF9A24] font-bold">
+                    {approvedCount}
+                  </span>
+                )}
+                <ArrowRight className="w-4 h-4 text-[#A7ABC0]" />
               </Link>
             </div>
           </div>
@@ -427,7 +436,7 @@ export const Home: React.FC = () => {
             to="/participantes"
             className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold text-[#F7F4F0] bg-[#15182A] hover:bg-[#1C1F38] border border-[#282B47] hover:border-[#FF7417]/50 transition-all self-start md:self-auto"
           >
-            <span>Ver los 57 participantes</span>
+            <span>Ver participantes {approvedCount > 0 ? `(${approvedCount})` : ''}</span>
             <ArrowRight className="w-4 h-4 text-[#FF7417]" />
           </Link>
         </div>
@@ -518,7 +527,9 @@ export const Home: React.FC = () => {
             to="/participantes"
             className="inline-flex items-center gap-2.5 px-8 py-3.5 rounded-2xl font-bold text-sm text-white bg-gradient-to-r from-[#FF7417] to-[#FF9A24] shadow-[0_4px_25px_rgba(255,116,23,0.35)] hover:brightness-110 transition-all transform hover:-translate-y-0.5"
           >
-            <span>Explorar galería completa (57 participantes)</span>
+            <span>
+              Explorar galería completa {approvedCount > 0 ? `(${approvedCount} participante${approvedCount === 1 ? '' : 's'})` : ''}
+            </span>
             <ArrowRight className="w-4 h-4" />
           </Link>
         </div>
