@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#141626" />
+      <stop offset="100%" stop-color="#090B14" />
+    </linearGradient>
+    <linearGradient id="pumpkinGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FF7417" />
+      <stop offset="100%" stop-color="#D95305" />
+    </linearGradient>
+  </defs>
+  <rect width="400" height="400" fill="url(#bgGrad)" />
+  <circle cx="200" cy="200" r="140" fill="#8B5CF6" opacity="0.1" />
+  <path d="M200 130 C150 130 110 165 110 215 C110 265 150 295 200 295 C250 295 290 265 290 215 C290 165 250 130 200 130 Z" fill="url(#pumpkinGrad)" />
+  <!-- Stem -->
+  <path d="M195 110 Q205 95 220 100 Q205 115 200 132 Z" fill="#10B981" />
+  <!-- Eyes -->
+  <polygon points="160,190 180,210 150,215" fill="#090B14" />
+  <polygon points="240,190 220,210 250,215" fill="#090B14" />
+  <!-- Nose -->
+  <polygon points="200,220 190,235 210,235" fill="#090B14" />
+  <!-- Smile -->
+  <path d="M150 250 Q200 280 250 250 Q235 270 200 270 Q165 270 150 250 Z" fill="#090B14" />
+  <text x="200" y="340" fill="#8B5CF6" font-family="sans-serif" font-size="16" font-weight="bold" text-anchor="middle" letter-spacing="2">FMVZ HALLOWEEN</text>
+</svg>
