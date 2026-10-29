@@ -298,6 +298,39 @@ export async function adminControlLive(req: Request, res: Response): Promise<voi
           console.error('[Live Auto-close Timer Error]:', timerErr);
         }
       }, (votingDuration + 1) * 1000);
+    } else if (action === 'ADJUST_TIMER') {
+      const delta = Number(req.body.delta || 0);
+      const newSec = Number(req.body.seconds);
+      const sessionRes = await db.query('SELECT stage_status, voting_seconds_left FROM live_stage_session WHERE id = 1');
+      const cur = sessionRes.rows[0];
+      if (cur && cur.stage_status === 'voting_open') {
+        let finalSeconds = !isNaN(newSec) && newSec > 0 ? newSec : (cur.voting_seconds_left || 30) + delta;
+        if (finalSeconds < 5) finalSeconds = 5;
+        await db.query(`
+          UPDATE live_stage_session
+          SET voting_seconds_left = $1, updated_at = CURRENT_TIMESTAMP
+          WHERE id = 1
+        `, [finalSeconds]);
+
+        if (liveVotingTimer) clearTimeout(liveVotingTimer);
+        liveVotingTimer = setTimeout(async () => {
+          try {
+            const dbInstance = await getDb();
+            const check = await dbInstance.query('SELECT stage_status FROM live_stage_session WHERE id = 1');
+            if (check.rows[0]?.stage_status === 'voting_open') {
+              await dbInstance.query(`
+                UPDATE live_stage_session
+                SET stage_status = 'voting_closed', voting_seconds_left = 0, updated_at = CURRENT_TIMESTAMP
+                WHERE id = 1
+              `);
+              const closedState = await fetchCurrentLiveState();
+              broadcastLiveEvent('LIVE_STATE_CHANGED', closedState);
+            }
+          } catch (timerErr) {
+            console.error('[Live Auto-close Timer Error]:', timerErr);
+          }
+        }, (finalSeconds + 1) * 1000);
+      }
     } else if (action === 'CLOSE_VOTING') {
       if (liveVotingTimer) {
         clearTimeout(liveVotingTimer);
@@ -403,18 +436,17 @@ export async function castLiveVote(req: Request, res: Response): Promise<void> {
       voterId = newVoter.rows[0].id;
     }
 
-    // Aplausómetro de votos: permite registrar múltiples votos por participante en tiempo real
+    // 1 voto por espectador por cada participante que sube al escenario
     const voteVal = vote === 'no' ? 'no' : 'yes';
-    const voteCount = Math.max(1, Math.min(25, Number(count || 1)));
 
-    if (voteVal === 'yes') {
-      const rows = Array(voteCount).fill(`(${voterId}, ${session.current_participant_id}, 'yes')`).join(',');
-      await db.query(`INSERT INTO live_votes (voter_id, participant_id, vote_value) VALUES ${rows}`);
-    } else {
-      await db.query(`INSERT INTO live_votes (voter_id, participant_id, vote_value) VALUES ($1, $2, 'no')`, [voterId, session.current_participant_id]);
-    }
+    await db.query(`
+      INSERT INTO live_votes (voter_id, participant_id, vote_value)
+      VALUES ($1, $2, $3)
+      ON CONFLICT (voter_id, participant_id) 
+      DO UPDATE SET vote_value = EXCLUDED.vote_value, created_at = CURRENT_TIMESTAMP
+    `, [voterId, session.current_participant_id, voteVal]);
 
-    // Recalculate votes for current participant and broadcast immediately
+    // Recalculate votes for current participant and broadcast immediately to admin console
     const votesRes = await db.query(`
       SELECT 
         COUNT(*) FILTER (WHERE vote_value = 'yes') as yes_count,
@@ -438,7 +470,6 @@ export async function castLiveVote(req: Request, res: Response): Promise<void> {
       success: true,
       participant_id: session.current_participant_id,
       vote: voteVal,
-      count: voteCount,
       tally,
     });
   } catch (err: any) {

@@ -714,23 +714,20 @@ export const LiveProjector: React.FC = () => {
                     />
                   </div>
 
-                  {/* Real-time incoming vote counter (Aplausómetro) */}
-                  <div className="p-4 rounded-2xl bg-gradient-to-r from-halloween-orange/20 via-black/60 to-purple-900/30 border-2 border-halloween-orange shadow-glow-orange flex items-center justify-between">
+                  {/* Audience Call to Action during Voting */}
+                  <div className="p-4 rounded-2xl bg-gradient-to-r from-halloween-orange/20 via-black/60 to-purple-900/30 border border-halloween-orange/60 shadow-glow-orange flex items-center justify-between">
                     <div className="space-y-1">
                       <div className="flex items-center gap-2 text-halloween-orange font-bold text-xs uppercase tracking-wider animate-pulse">
-                        <Flame className="w-4 h-4 text-halloween-orange" />
-                        <span>Aplausómetro en Vivo</span>
+                        <Radio className="w-4 h-4 text-halloween-orange" />
+                        <span>Urna Electrónica Abierta</span>
                       </div>
-                      <span className="text-xs text-gray-300 block">
-                        Votos recibidos en tiempo real
+                      <span className="text-xs text-gray-200 block">
+                        Vota en secreto desde tu celular escaneando el código QR
                       </span>
                     </div>
                     <div className="text-right">
-                      <span className="font-mono font-black text-4xl sm:text-5xl text-emerald-400 drop-shadow-[0_0_15px_rgba(16,185,129,0.5)]">
-                        {state.current_votes.yes_count}
-                      </span>
-                      <span className="text-[10px] text-emerald-400 font-bold block uppercase tracking-wider">
-                        Votos 🔥
+                      <span className="px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-400 text-emerald-300 font-bold text-xs">
+                        Recibiendo votos...
                       </span>
                     </div>
                   </div>
@@ -842,23 +839,26 @@ export const LiveProjector: React.FC = () => {
                   )}
                 </div>
               ) : state.stage_status === 'voting_closed' ? (
-                <div className="glass-panel p-6 sm:p-8 rounded-3xl border border-halloween-purple/50 shadow-glow-purple space-y-6">
+                <div className="glass-panel p-6 sm:p-8 rounded-3xl border border-halloween-purple/50 shadow-glow-purple space-y-4">
                   <div className="flex items-center justify-between">
                     <div>
                       <span className="text-xs text-red-400 font-bold uppercase tracking-wider block">
-                        Votación Concluida
+                        Votación Concluida para este participante
                       </span>
                       <strong className="text-2xl text-white font-display">
-                        Total de Votos Obtenidos
+                        Votos Guardados en la Urna Digital
                       </strong>
                     </div>
-                    <div className="px-5 py-2 rounded-2xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 font-mono font-black text-3xl">
-                      {state.current_votes.yes_count} Votos
+                    <div className="px-4 py-2 rounded-2xl bg-halloween-purple/20 border border-halloween-purple/40 text-halloween-lavender font-mono font-bold text-sm">
+                      🔒 Votos Secretos
                     </div>
                   </div>
 
-                  <p className="text-xs text-halloween-muted">
-                    El moderador pasará al siguiente concursante en unos momentos...
+                  <p className="text-xs text-gray-300">
+                    Los votos han sido guardados con trazabilidad institucional. Los resultados oficiales se revelarán durante la ceremonia de premiación.
+                  </p>
+                  <p className="text-[11px] text-halloween-muted">
+                    El moderador llamará al siguiente concursante en breve...
                   </p>
                 </div>
               ) : (

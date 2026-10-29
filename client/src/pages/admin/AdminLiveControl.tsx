@@ -45,6 +45,7 @@ export const AdminLiveControl: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [actionLoading, setActionLoading] = useState<boolean>(false);
+  const [votingDuration, setVotingDuration] = useState<number>(30);
 
   // Fetch current live state
   const fetchState = async () => {
@@ -327,48 +328,138 @@ export const AdminLiveControl: React.FC = () => {
             </div>
           )}
 
-          {/* Big Action Controls */}
-          <div className="space-y-3">
-            <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider block">
-              Controles del Presentador
-            </span>
+          {/* Duration Selector & Voting Controls */}
+          <div className="space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-2xl bg-[#0B0D1A] border border-halloween-border">
+              <div>
+                <span className="text-xs font-bold text-white block">
+                  ⏱️ Duración de la Votación:
+                </span>
+                <span className="text-[11px] text-halloween-muted">
+                  Selecciona cuántos segundos tendrá el público para votar por cada participante
+                </span>
+              </div>
+              <div className="flex items-center gap-1.5 flex-wrap">
+                {[15, 30, 45, 60, 90].map((sec) => (
+                  <button
+                    key={sec}
+                    type="button"
+                    onClick={() => setVotingDuration(sec)}
+                    disabled={state.stage_status === 'voting_open'}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                      votingDuration === sec
+                        ? 'bg-halloween-orange text-black shadow-glow-orange'
+                        : 'bg-surface-raised text-gray-400 hover:text-white border border-halloween-border'
+                    } disabled:opacity-50`}
+                  >
+                    {sec}s
+                  </button>
+                ))}
+                <div className="flex items-center gap-1 pl-1">
+                  <input
+                    type="number"
+                    min={5}
+                    max={300}
+                    value={votingDuration}
+                    onChange={(e) => setVotingDuration(Math.max(5, Number(e.target.value)))}
+                    disabled={state.stage_status === 'voting_open'}
+                    className="w-16 px-2 py-1 rounded-xl bg-black border border-halloween-border text-center text-xs font-mono font-bold text-white focus:outline-none focus:border-halloween-orange"
+                  />
+                  <span className="text-xs text-gray-400">seg</span>
+                </div>
+              </div>
+            </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              <button
-                onClick={() => sendControlAction({ action: 'PREV_PARTICIPANT' })}
-                disabled={actionLoading}
-                className="py-3 px-4 rounded-xl text-xs font-bold bg-surface-raised border border-halloween-border hover:border-halloween-purple text-gray-300 hover:text-white flex items-center justify-center gap-2 transition-all"
-              >
-                <ChevronLeft className="w-4 h-4" />
-                <span>Anterior</span>
-              </button>
+            {/* In-flight Active Timer Controller (if voting is running) */}
+            {state.stage_status === 'voting_open' && (
+              <div className="p-4 rounded-2xl bg-amber-950/40 border-2 border-amber-500/70 shadow-glow-orange flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-pulse">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-300 flex items-center justify-center font-mono font-black text-lg border border-amber-400/50">
+                    <Clock className="w-5 h-5 animate-spin-slow" />
+                  </div>
+                  <div>
+                    <span className="text-xs font-bold text-amber-300 uppercase tracking-wider block">
+                      Votación en Curso
+                    </span>
+                    <span className="text-xs text-white">
+                      Puedes aumentar o reducir el tiempo en vivo para este participante:
+                    </span>
+                  </div>
+                </div>
 
-              <button
-                onClick={() => sendControlAction({ action: 'NEXT_PARTICIPANT' })}
-                disabled={actionLoading}
-                className="py-3 px-4 rounded-xl text-xs font-bold bg-surface-raised border border-halloween-border hover:border-halloween-purple text-gray-300 hover:text-white flex items-center justify-center gap-2 transition-all"
-              >
-                <span>Siguiente</span>
-                <ChevronRight className="w-4 h-4" />
-              </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => sendControlAction({ action: 'ADJUST_TIMER', delta: 10 })}
+                    disabled={actionLoading}
+                    className="px-3.5 py-2 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm flex items-center gap-1 cursor-pointer"
+                  >
+                    <span>+10s</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => sendControlAction({ action: 'ADJUST_TIMER', delta: -10 })}
+                    disabled={actionLoading}
+                    className="px-3.5 py-2 rounded-xl text-xs font-bold bg-amber-600 hover:bg-amber-500 text-white shadow-sm flex items-center gap-1 cursor-pointer"
+                  >
+                    <span>-10s</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => sendControlAction({ action: 'CLOSE_VOTING' })}
+                    disabled={actionLoading}
+                    className="px-4 py-2 rounded-xl text-xs font-bold bg-red-600 hover:bg-red-700 text-white shadow-sm flex items-center gap-1 cursor-pointer"
+                  >
+                    <Square className="w-3.5 h-3.5" />
+                    <span>Cerrar Ahora</span>
+                  </button>
+                </div>
+              </div>
+            )}
 
-              <button
-                onClick={() => sendControlAction({ action: 'OPEN_VOTING', seconds: 30 })}
-                disabled={actionLoading || !current}
-                className="py-3 px-4 rounded-xl text-xs font-bold bg-gradient-to-r from-halloween-orange to-amber-600 hover:from-halloween-orange-dark hover:to-halloween-orange text-white shadow-glow-orange flex items-center justify-center gap-2 transition-all disabled:opacity-50"
-              >
-                <Play className="w-4 h-4" />
-                <span>Abrir Voto (30s)</span>
-              </button>
+            {/* Big Action Controls */}
+            <div className="space-y-3">
+              <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider block">
+                Navegación del Escenario
+              </span>
 
-              <button
-                onClick={() => sendControlAction({ action: 'CLOSE_VOTING' })}
-                disabled={actionLoading}
-                className="py-3 px-4 rounded-xl text-xs font-bold bg-red-600/20 border border-red-500/50 hover:bg-red-600/30 text-red-300 flex items-center justify-center gap-2 transition-all"
-              >
-                <Square className="w-4 h-4" />
-                <span>Cerrar Voto</span>
-              </button>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <button
+                  onClick={() => sendControlAction({ action: 'PREV_PARTICIPANT' })}
+                  disabled={actionLoading}
+                  className="py-3 px-4 rounded-xl text-xs font-bold bg-surface-raised border border-halloween-border hover:border-halloween-purple text-gray-300 hover:text-white flex items-center justify-center gap-2 transition-all cursor-pointer"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                  <span>Anterior</span>
+                </button>
+
+                <button
+                  onClick={() => sendControlAction({ action: 'NEXT_PARTICIPANT' })}
+                  disabled={actionLoading}
+                  className="py-3 px-4 rounded-xl text-xs font-bold bg-surface-raised border border-halloween-border hover:border-halloween-purple text-gray-300 hover:text-white flex items-center justify-center gap-2 transition-all cursor-pointer"
+                >
+                  <span>Siguiente</span>
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+
+                <button
+                  onClick={() => sendControlAction({ action: 'OPEN_VOTING', seconds: votingDuration })}
+                  disabled={actionLoading || !current || state.stage_status === 'voting_open'}
+                  className="py-3 px-4 rounded-xl text-xs font-bold bg-gradient-to-r from-halloween-orange to-amber-600 hover:from-halloween-orange-dark hover:to-halloween-orange text-white shadow-glow-orange flex items-center justify-center gap-2 transition-all disabled:opacity-50 cursor-pointer"
+                >
+                  <Play className="w-4 h-4" />
+                  <span>Abrir Voto ({votingDuration}s)</span>
+                </button>
+
+                <button
+                  onClick={() => sendControlAction({ action: 'CLOSE_VOTING' })}
+                  disabled={actionLoading || state.stage_status !== 'voting_open'}
+                  className="py-3 px-4 rounded-xl text-xs font-bold bg-red-600/20 border border-red-500/50 hover:bg-red-600/30 text-red-300 flex items-center justify-center gap-2 transition-all disabled:opacity-50 cursor-pointer"
+                >
+                  <Square className="w-4 h-4" />
+                  <span>Cerrar Voto</span>
+                </button>
+              </div>
             </div>
 
             {/* Special Stage Modes */}
