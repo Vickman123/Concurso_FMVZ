@@ -44,10 +44,6 @@ export const Faq: React.FC = () => {
       a: 'Los resultados oficiales se darán a conocer tras el cierre de votación el mismo 3 de noviembre de 2026, una vez que el comité organizador valide la integridad del conteo y proceda a su publicación en este portal.',
     },
     {
-      q: '¿Cómo se asignan los premios adicionales?',
-      a: 'Existen 20 premios adicionales de $5,000 MXN cada uno. La modalidad de asignación (menciones honoríficas, sorteo entre participantes o criterios técnicos del jurado) será determinada formalmente en las bases oficiales publicadas por la FMVZ y configurada por el comité organizador.',
-    },
-    {
       q: '¿Dónde puedo solicitar ayuda?',
       a: 'Para dudas técnicas sobre la plataforma, corrección de fotografías o aclaraciones, puedes comunicarte al correo oficial del comité: concurso.disfraces@fmvz.unam.mx o acudir a la mesa directiva del evento durante la jornada.',
     },

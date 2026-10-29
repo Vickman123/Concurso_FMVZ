@@ -5,7 +5,6 @@ import {
   Users,
   Camera,
   Heart,
-  Trophy,
   Sliders,
   FileText,
   LogOut,
@@ -33,7 +32,6 @@ export const AdminLayout: React.FC = () => {
     { label: 'Fotografías', path: '/admin/fotografias', icon: Camera },
     { label: 'Votos', path: '/admin/votos', icon: Heart },
     { label: 'Resultados', path: '/admin/resultados', icon: BarChart3 },
-    { label: 'Premios', path: '/admin/premios', icon: Trophy },
     { label: 'Configuración & QR', path: '/admin/configuracion', icon: Sliders },
     { label: 'Auditoría', path: '/admin/auditoria', icon: FileText },
   ];

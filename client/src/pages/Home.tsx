@@ -6,8 +6,6 @@ import {
   Calendar,
   MapPin,
   Users,
-  Trophy,
-  Gift,
   ArrowRight,
   PlusCircle,
   Sparkles,
@@ -36,7 +34,6 @@ export const Home: React.FC = () => {
 
   // Main page ref for GSAP scope
   const pageRef = useRef<HTMLDivElement>(null);
-  const prizesRef = useRef<HTMLDivElement>(null);
 
   // Fetch participants for preview
   useEffect(() => {
@@ -66,27 +63,6 @@ export const Home: React.FC = () => {
         .from('.hero-meta-item', { y: 15, opacity: 0, duration: 0.4, stagger: 0.08 }, '-=0.2')
         .from('.hero-actions-container', { y: 15, opacity: 0, duration: 0.4 }, '-=0.15')
         .from('.hero-indicators', { y: 20, opacity: 0, duration: 0.5 }, '-=0.1');
-
-      // ScrollTrigger for Prizes Cards Stagger
-      if (prizesRef.current) {
-        gsap.fromTo(
-          prizesRef.current.querySelectorAll('.prize-card'),
-          { y: 30, opacity: 0, scale: 0.96 },
-          {
-            y: 0,
-            opacity: 1,
-            scale: 1,
-            duration: 0.6,
-            stagger: 0.12,
-            ease: 'power2.out',
-            scrollTrigger: {
-              trigger: prizesRef.current,
-              start: 'top 85%',
-              toggleActions: 'play none none none',
-            },
-          }
-        );
-      }
     }, pageRef);
 
     return () => ctx.revert();
@@ -298,126 +274,17 @@ export const Home: React.FC = () => {
         {/* Scroll down indicator */}
         <div className="flex justify-center mt-6">
           <a
-            href="#premios"
+            href="#galeria"
             className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-[#15182A] border border-[#282B47] text-xs font-medium text-[#A7ABC0] hover:text-[#F7F4F0] hover:border-[#FF7417]/50 transition-all group"
           >
-            <span>Descubre más</span>
+            <span>Ver participantes</span>
             <ChevronDown className="w-3.5 h-3.5 text-[#FF7417] group-hover:translate-y-0.5 transition-transform" />
           </a>
         </div>
       </section>
 
-      {/* ===================== SECCIÓN DE PREMIOS (SECTION 6) ===================== */}
-      <section
-        id="premios"
-        ref={prizesRef}
-        className="relative py-12 sm:py-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto"
-      >
-        {/* Section Header */}
-        <div className="text-center max-w-2xl mx-auto mb-10 sm:mb-14">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#FF7417]/10 border border-[#FF7417]/30 text-[#FF9A24] text-xs font-bold uppercase tracking-wider mb-3">
-            <Crown className="w-4 h-4 text-[#FF7417]" />
-            <span>Reconocimiento al talento</span>
-          </div>
-          <h2 className="font-display font-black text-3xl sm:text-5xl text-[#F7F4F0]">
-            Premios del Concurso
-          </h2>
-          <p className="text-sm sm:text-base text-[#A7ABC0] mt-3">
-            Reconociendo el talento, ingenio y dedicación de nuestra comunidad universitaria.
-          </p>
-        </div>
-
-        {/* 4 Cards Row matching reference */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 sm:gap-6">
-          
-          {/* 1st Place: Gold */}
-          <div className="prize-card relative rounded-3xl bg-gradient-to-b from-[#1C1F38] to-[#15182A] border-2 border-amber-500/80 p-6 flex flex-col justify-between shadow-[0_0_30px_rgba(245,158,11,0.25)] hover:shadow-[0_0_40px_rgba(245,158,11,0.4)] transition-all duration-300 transform hover:-translate-y-1">
-            <div className="absolute top-4 right-4 w-9 h-9 rounded-full bg-amber-500/20 flex items-center justify-center border border-amber-500/40">
-              <Trophy className="w-5 h-5 text-amber-400" />
-            </div>
-            <div>
-              <span className="px-3 py-1 rounded-full text-xs font-black tracking-wider uppercase bg-amber-500/20 text-amber-300 border border-amber-500/40">
-                🥇 1er Lugar
-              </span>
-              <p className="font-display font-black text-3xl sm:text-4xl text-[#F7F4F0] mt-5">
-                $10,000 <span className="text-lg font-semibold text-amber-400">MXN</span>
-              </p>
-            </div>
-            <p className="text-xs text-[#A7ABC0] mt-4 pt-4 border-t border-[#282B47]">
-              Galardón principal al disfraz con mayor votación verificada del evento.
-            </p>
-          </div>
-
-          {/* 2nd Place: Silver */}
-          <div className="prize-card relative rounded-3xl bg-gradient-to-b from-[#1A1D34] to-[#15182A] border border-slate-300/60 p-6 flex flex-col justify-between shadow-[0_0_20px_rgba(203,213,225,0.15)] hover:shadow-[0_0_30px_rgba(203,213,225,0.3)] transition-all duration-300 transform hover:-translate-y-1">
-            <div className="absolute top-4 right-4 w-9 h-9 rounded-full bg-slate-300/20 flex items-center justify-center border border-slate-300/40">
-              <Trophy className="w-5 h-5 text-slate-200" />
-            </div>
-            <div>
-              <span className="px-3 py-1 rounded-full text-xs font-black tracking-wider uppercase bg-slate-400/20 text-slate-200 border border-slate-400/40">
-                🥈 2do Lugar
-              </span>
-              <p className="font-display font-black text-3xl sm:text-4xl text-[#F7F4F0] mt-5">
-                $7,000 <span className="text-lg font-semibold text-slate-300">MXN</span>
-              </p>
-            </div>
-            <p className="text-xs text-[#A7ABC0] mt-4 pt-4 border-t border-[#282B47]">
-              Segundo lugar general de la competencia institucional FMVZ.
-            </p>
-          </div>
-
-          {/* 3rd Place: Bronze */}
-          <div className="prize-card relative rounded-3xl bg-gradient-to-b from-[#1C1A2E] to-[#15182A] border border-[#FF7417]/60 p-6 flex flex-col justify-between shadow-[0_0_20px_rgba(255,116,23,0.15)] hover:shadow-[0_0_30px_rgba(255,116,23,0.3)] transition-all duration-300 transform hover:-translate-y-1">
-            <div className="absolute top-4 right-4 w-9 h-9 rounded-full bg-[#FF7417]/20 flex items-center justify-center border border-[#FF7417]/40">
-              <Trophy className="w-5 h-5 text-[#FF9A24]" />
-            </div>
-            <div>
-              <span className="px-3 py-1 rounded-full text-xs font-black tracking-wider uppercase bg-[#FF7417]/20 text-[#FF9A24] border border-[#FF7417]/40">
-                🥉 3er Lugar
-              </span>
-              <p className="font-display font-black text-3xl sm:text-4xl text-[#F7F4F0] mt-5">
-                $6,000 <span className="text-lg font-semibold text-[#FF9A24]">MXN</span>
-              </p>
-            </div>
-            <p className="text-xs text-[#A7ABC0] mt-4 pt-4 border-t border-[#282B47]">
-              Tercer lugar general reconocido en la ceremonia de premiación.
-            </p>
-          </div>
-
-          {/* Additional Prizes: 20 Awards */}
-          <div className="prize-card relative rounded-3xl bg-gradient-to-b from-[#1E1838] to-[#15182A] border border-[#8B5CF6]/70 p-6 flex flex-col justify-between shadow-[0_0_25px_rgba(139,92,246,0.2)] hover:shadow-[0_0_35px_rgba(139,92,246,0.35)] transition-all duration-300 transform hover:-translate-y-1">
-            <div className="absolute top-4 right-4 w-9 h-9 rounded-full bg-[#8B5CF6]/20 flex items-center justify-center border border-[#8B5CF6]/40">
-              <Gift className="w-5 h-5 text-[#B79AFF]" />
-            </div>
-            <div>
-              <span className="px-3 py-1 rounded-full text-xs font-black tracking-wider uppercase bg-[#8B5CF6]/20 text-[#B79AFF] border border-[#8B5CF6]/40">
-                🎁 20 Premios Extra
-              </span>
-              <p className="font-display font-black text-3xl sm:text-4xl text-[#F7F4F0] mt-5">
-                $5,000 <span className="text-sm font-semibold text-[#B79AFF]">c/u</span>
-              </p>
-            </div>
-            <p className="text-xs text-[#A7ABC0] mt-4 pt-4 border-t border-[#282B47]">
-              Otorgados del 4.º al 23.º lugar con mayor cantidad de votos verificados.
-            </p>
-          </div>
-
-        </div>
-
-        {/* Link to complete bases & prize policy */}
-        <div className="text-center mt-8">
-          <Link
-            to="/premios"
-            className="inline-flex items-center gap-2 text-sm font-semibold text-[#B79AFF] hover:text-[#F7F4F0] transition-colors"
-          >
-            <span>Consultar bases oficiales y mecanismo de entrega de premios</span>
-            <ArrowRight className="w-4 h-4 text-[#FF7417]" />
-          </Link>
-        </div>
-      </section>
-
       {/* ===================== PARTICIPANTS GALLERY PREVIEW (SECTION 7) ===================== */}
-      <section className="relative py-12 sm:py-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto border-t border-[#282B47]/60">
+      <section id="galeria" className="relative py-12 sm:py-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto border-t border-[#282B47]/60">
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
           <div>
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#8B5CF6]/15 border border-[#8B5CF6]/30 text-[#B79AFF] text-xs font-bold uppercase tracking-wider mb-2">

@@ -100,10 +100,10 @@ export const VoteConfirmed: React.FC = () => {
             <ArrowRight className="w-4 h-4" />
           </Link>
           <Link
-            to="/premios"
+            to="/"
             className="w-full block py-2.5 rounded-xl font-semibold text-xs text-gray-300 hover:text-white bg-surface-raised transition-colors"
           >
-            Ver premios del concurso
+            Volver al inicio
           </Link>
         </div>
       </div>

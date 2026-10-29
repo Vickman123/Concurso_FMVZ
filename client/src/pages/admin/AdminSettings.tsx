@@ -10,7 +10,6 @@ export const AdminSettings: React.FC = () => {
   const [isLiveActive, setIsLiveActive] = useState(false);
   const [regLimit, setRegLimit] = useState(100);
   const [totalRegistered, setTotalRegistered] = useState(0);
-  const [additionalMethod, setAdditionalMethod] = useState('');
   const [loading, setLoading] = useState(true);
   const [savedSuccess, setSavedSuccess] = useState(false);
   const [qrDataUrl, setQrDataUrl] = useState<string>('');
@@ -25,7 +24,6 @@ export const AdminSettings: React.FC = () => {
         setIsLiveActive(Boolean(data.is_live_active));
         setRegLimit(data.registration_limit || 100);
         setTotalRegistered(data.total_registered || 0);
-        setAdditionalMethod(data.additional_prizes_method || '');
       }
 
       // Generate QR
@@ -63,7 +61,6 @@ export const AdminSettings: React.FC = () => {
           voting_status: votingStatus,
           is_live_active: isLiveActive,
           registration_limit: Number(regLimit),
-          additional_prizes_method: additionalMethod,
         }),
       });
 
@@ -154,20 +151,6 @@ export const AdminSettings: React.FC = () => {
               <span className="text-[11px] text-halloween-muted mt-1 block">
                 Objetivo institucional: 100 participantes ({totalRegistered} registros activos actualmente).
               </span>
-            </div>
-
-            {/* Additional prizes text */}
-            <div>
-              <label className="block text-gray-300 font-semibold mb-1.5">
-                Nota Pública sobre Asignación de 20 Premios Adicionales
-              </label>
-              <textarea
-                rows={3}
-                value={additionalMethod}
-                onChange={(e) => setAdditionalMethod(e.target.value)}
-                disabled={admin?.role !== 'admin'}
-                className="w-full px-4 py-3 rounded-xl bg-surface-raised border border-halloween-border text-white text-xs resize-none disabled:opacity-50"
-              />
             </div>
 
             {admin?.role === 'admin' && (

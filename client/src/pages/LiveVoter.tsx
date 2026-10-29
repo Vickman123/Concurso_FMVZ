@@ -414,7 +414,7 @@ export const LiveVoter: React.FC = () => {
               ¡Concurso Finalizado!
             </h2>
             <p className="text-xs text-halloween-lavender">
-              Observa la pantalla gigante del auditorio para ver los disfraces ganadores de los premios oficiales de la FMVZ.
+              Observa la pantalla gigante del auditorio para ver a los concursantes y disfraces ganadores de la FMVZ.
             </p>
           </div>
         ) : currentParticipant ? (

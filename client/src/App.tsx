@@ -19,7 +19,6 @@ import { CheckStatus } from './pages/CheckStatus';
 import { VoteIdentify } from './pages/VoteIdentify';
 import { VoteConfirm } from './pages/VoteConfirm';
 import { VoteConfirmed } from './pages/VoteConfirmed';
-import { Prizes } from './pages/Prizes';
 import { Faq } from './pages/Faq';
 import { PrivacyNotice } from './pages/PrivacyNotice';
 import { LogoShowcase } from './pages/LogoShowcase';
@@ -34,7 +33,6 @@ import { AdminParticipants } from './pages/admin/AdminParticipants';
 import { AdminPhotos } from './pages/admin/AdminPhotos';
 import { AdminVotes } from './pages/admin/AdminVotes';
 import { AdminResults } from './pages/admin/AdminResults';
-import { AdminPrizes } from './pages/admin/AdminPrizes';
 import { AdminSettings } from './pages/admin/AdminSettings';
 import { AdminAudit } from './pages/admin/AdminAudit';
 import { AdminLiveControl } from './pages/admin/AdminLiveControl';
@@ -81,7 +79,7 @@ const AppContent: React.FC = () => {
           <Route path="/votar" element={<VoteIdentify />} />
           <Route path="/votar/confirmar/:numero" element={<VoteConfirm />} />
           <Route path="/voto/confirmado" element={<VoteConfirmed />} />
-          <Route path="/premios" element={<Prizes />} />
+          <Route path="/premios" element={<Navigate to="/" replace />} />
           <Route path="/preguntas-frecuentes" element={<Faq />} />
           <Route path="/aviso-de-privacidad" element={<PrivacyNotice />} />
           <Route path="/logos" element={<LogoShowcase />} />
@@ -109,7 +107,7 @@ const AppContent: React.FC = () => {
             <Route path="fotografias" element={<AdminPhotos />} />
             <Route path="votos" element={<AdminVotes />} />
             <Route path="resultados" element={<AdminResults />} />
-            <Route path="premios" element={<AdminPrizes />} />
+            <Route path="premios" element={<Navigate to="/admin" replace />} />
             <Route path="configuracion" element={<AdminSettings />} />
             <Route path="auditoria" element={<AdminAudit />} />
           </Route>

@@ -196,7 +196,6 @@ export const LogoShowcase: React.FC = () => {
               <span className="text-white font-bold border-b border-[#FF7417] pb-0.5">Inicio</span>
               <span>Participantes</span>
               <span>Registrar mi disfraz</span>
-              <span>Premios</span>
               <span>Preguntas frecuentes</span>
             </div>
 

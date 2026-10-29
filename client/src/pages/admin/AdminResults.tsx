@@ -117,7 +117,7 @@ export const AdminResults: React.FC = () => {
           <strong>Visibilidad pública:</strong>
           <span>
             {pubStatus === 'published'
-              ? 'Los resultados son visibles en la sección de Premios para toda la comunidad.'
+              ? 'Los resultados son visibles públicamente para toda la comunidad.'
               : 'Los resultados se encuentran ocultos al público hasta la validación oficial del jurado.'}
           </span>
         </div>
@@ -134,7 +134,6 @@ export const AdminResults: React.FC = () => {
                 <th className="py-3 px-4 font-semibold">Nombre Público</th>
                 <th className="py-3 px-4 font-semibold">Tipo</th>
                 <th className="py-3 px-4 font-semibold text-right">Votos Válidos</th>
-                <th className="py-3 px-4 font-semibold text-right">Premios Estimados</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-halloween-border/40">
@@ -182,12 +181,6 @@ export const AdminResults: React.FC = () => {
                       <span className="font-display font-bold text-base text-halloween-orange">
                         {r.total_votes}
                       </span>
-                    </td>
-                    <td className="py-3 px-4 text-right font-semibold">
-                      {rank === 1 && <span className="text-amber-300">$10,000 MXN</span>}
-                      {rank === 2 && <span className="text-slate-200">$7,000 MXN</span>}
-                      {rank === 3 && <span className="text-amber-400">$6,000 MXN</span>}
-                      {rank > 3 && <span className="text-gray-500">—</span>}
                     </td>
                   </tr>
                 );
