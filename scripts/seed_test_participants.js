@@ -22,7 +22,7 @@ async function insertParticipants() {
     ) VALUES (
       1, 'Santiago Morales Rivera', 'Santiago (Spiderman)', 'Spiderman Universitario',
       'El clásico Hombre Araña llega a defender la FMVZ de cualquier villano con su traje arácnido.',
-      'student', '318001122', $1, '/test-costumes/spiderman.jpg', 'approved', 'FMVZ-2026-SPID-001'
+      'student', '318001122', $1, $1, 'approved', 'FMVZ-2026-SPID-001'
     ) RETURNING id
   `, [p1_b64]);
 
@@ -34,7 +34,7 @@ async function insertParticipants() {
     ) VALUES (
       2, 'Mateo Hernández Cruz', 'Mateo (Payaso Asesino)', 'Payaso Asesino del Circo Siniestro',
       'Directo de tus peores pesadillas circenses, maquillaje tétrico y globo rojo listo para asustar.',
-      'student', '318002233', $1, '/test-costumes/payaso_asesino.jpg', 'approved', 'FMVZ-2026-CLWN-002'
+      'student', '318002233', $1, $1, 'approved', 'FMVZ-2026-CLWN-002'
     ) RETURNING id
   `, [p2_b64]);
 
@@ -46,7 +46,7 @@ async function insertParticipants() {
     ) VALUES (
       3, 'Valeria Gómez Luna', 'Valeria (Chica Vampiro)', 'Chica Vampiro Victoriana',
       'Elegancia gótica, vestido de terciopelo borgoña, encaje negro y colmillos afilados.',
-      'student', '318003344', $1, '/test-costumes/chica_vampiro.jpg', 'approved', 'FMVZ-2026-VAMP-003'
+      'student', '318003344', $1, $1, 'approved', 'FMVZ-2026-VAMP-003'
     ) RETURNING id
   `, [p3_b64]);
 

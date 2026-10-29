@@ -514,9 +514,14 @@ export const AdminLiveControl: React.FC = () => {
                       {idx + 1}
                     </span>
                     <img
-                      src={p.photo_thumbnail_key || p.photo_original_key}
+                      src={p.photo_original_key || p.photo_thumbnail_key}
                       alt={p.costume_title}
-                      className="w-8 h-8 rounded-lg object-cover flex-shrink-0"
+                      className="w-8 h-8 rounded-lg object-cover flex-shrink-0 bg-black/40"
+                      onError={(e) => {
+                        if (p.photo_original_key && e.currentTarget.src !== p.photo_original_key) {
+                          e.currentTarget.src = p.photo_original_key;
+                        }
+                      }}
                     />
                     <div className="truncate">
                       <strong className="block truncate text-white">{p.costume_title}</strong>
@@ -572,9 +577,14 @@ export const AdminLiveControl: React.FC = () => {
                 <div>
                   <div className="relative aspect-square rounded-xl overflow-hidden mb-2">
                     <img
-                      src={p.photo_thumbnail_key || p.photo_original_key}
+                      src={p.photo_original_key || p.photo_thumbnail_key}
                       alt={p.costume_title}
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-cover bg-black/40"
+                      onError={(e) => {
+                        if (p.photo_original_key && e.currentTarget.src !== p.photo_original_key) {
+                          e.currentTarget.src = p.photo_original_key;
+                        }
+                      }}
                     />
                     <span className="absolute top-1 left-1 px-1.5 py-0.5 rounded-md bg-black/80 font-mono font-bold text-[10px] text-white">
                       #{p.contest_number}
