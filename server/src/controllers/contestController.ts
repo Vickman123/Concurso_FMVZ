@@ -58,7 +58,7 @@ export async function getPublicResults(req: Request, res: Response): Promise<voi
       return;
     }
 
-    // Tally votes for approved participants
+    // Tally votes for approved participants (combining both web votes and live stage votes)
     const tallyRes = await db.query(`
       SELECT 
         p.contest_number,
@@ -66,11 +66,14 @@ export async function getPublicResults(req: Request, res: Response): Promise<voi
         p.costume_title,
         p.photo_original_key,
         p.participant_type,
-        COUNT(v.id) as total_votes
+        (
+          COALESCE((SELECT COUNT(*) FROM votes v WHERE v.participant_id = p.id AND v.status = 'valid'), 0) +
+          COALESCE((SELECT COUNT(*) FROM live_votes lv WHERE lv.participant_id = p.id AND lv.vote_value = 'yes'), 0)
+        ) as total_votes,
+        COALESCE((SELECT COUNT(*) FROM votes v WHERE v.participant_id = p.id AND v.status = 'valid'), 0) as web_votes,
+        COALESCE((SELECT COUNT(*) FROM live_votes lv WHERE lv.participant_id = p.id AND lv.vote_value = 'yes'), 0) as live_votes
       FROM participants p
-      LEFT JOIN votes v ON p.id = v.participant_id AND v.status = 'valid'
       WHERE p.status = 'approved'
-      GROUP BY p.id, p.contest_number, p.public_display_name, p.costume_title, p.photo_original_key, p.participant_type
       ORDER BY total_votes DESC, p.contest_number ASC
     `);
 

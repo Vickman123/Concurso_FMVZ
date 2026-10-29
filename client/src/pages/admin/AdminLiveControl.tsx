@@ -25,6 +25,8 @@ interface LiveParticipant {
   photo_thumbnail_key?: string;
   photo_original_key: string;
   live_yes_votes?: number;
+  web_votes?: number;
+  total_votes?: number;
 }
 
 interface LiveState {
@@ -498,7 +500,13 @@ export const AdminLiveControl: React.FC = () => {
 
           <div className="space-y-2 max-h-[360px] overflow-y-auto pr-1">
             {[...state.participants]
-              .sort((a, b) => (b.live_yes_votes || 0) - (a.live_yes_votes || 0))
+              .sort((a, b) => {
+                const aCount = Number(a.total_votes ?? a.live_yes_votes ?? 0);
+                const bCount = Number(b.total_votes ?? b.live_yes_votes ?? 0);
+                const diff = bCount - aCount;
+                if (diff !== 0) return diff;
+                return (a.contest_number || 0) - (b.contest_number || 0);
+              })
               .slice(0, 10)
               .map((p, idx) => (
                 <div
@@ -530,7 +538,7 @@ export const AdminLiveControl: React.FC = () => {
                   </div>
 
                   <span className="font-mono font-bold text-halloween-orange flex-shrink-0 ml-2">
-                    {p.live_yes_votes || 0} pts
+                    {p.total_votes ?? p.live_yes_votes ?? 0} pts
                   </span>
                 </div>
               ))}

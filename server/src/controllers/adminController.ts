@@ -82,7 +82,20 @@ export async function getDashboardStats(req: Request, res: Response): Promise<vo
       FROM participants
     `);
 
-    const votesRes = await db.query("SELECT COUNT(*) as total_votes FROM votes WHERE status = 'valid'");
+    const votesRes = await db.query(`
+      SELECT 
+        COALESCE((SELECT COUNT(*) FROM votes WHERE status = 'valid'), 0) as web_votes,
+        COALESCE((SELECT COUNT(*) FROM live_votes WHERE vote_value = 'yes'), 0) as live_yes_votes,
+        COALESCE((SELECT COUNT(*) FROM live_votes WHERE vote_value = 'no'), 0) as live_no_votes,
+        (
+          COALESCE((SELECT COUNT(*) FROM votes WHERE status = 'valid'), 0) +
+          COALESCE((SELECT COUNT(*) FROM live_votes WHERE vote_value = 'yes'), 0)
+        ) as total_valid_votes,
+        (
+          COALESCE((SELECT COUNT(*) FROM votes), 0) +
+          COALESCE((SELECT COUNT(*) FROM live_votes), 0)
+        ) as total_all_records
+    `);
     const settingsRes = await db.query('SELECT * FROM contest_settings WHERE id = 1');
     const recentAudit = await db.query(`
       SELECT a.*, adm.name as admin_name 
@@ -94,7 +107,8 @@ export async function getDashboardStats(req: Request, res: Response): Promise<vo
 
     const counts = countsRes.rows[0];
     const settings = settingsRes.rows[0] || {};
-    const totalVotes = Number(votesRes.rows[0]?.total_votes || 0);
+    const voteStats = votesRes.rows[0] || {};
+    const totalVotes = Number(voteStats.total_valid_votes || 0);
     const capacityLimit = Number(settings.registration_limit || 100);
     const totalParticipants = Number(counts.total_participants || 0);
 
@@ -108,6 +122,10 @@ export async function getDashboardStats(req: Request, res: Response): Promise<vo
       rejected_count: Number(counts.rejected_count || 0),
       inactive_count: Number(counts.inactive_count || 0),
       total_votes: totalVotes,
+      web_votes: Number(voteStats.web_votes || 0),
+      live_votes: Number(voteStats.live_yes_votes || 0),
+      passed_votes: Number(voteStats.live_no_votes || 0),
+      total_all_records: Number(voteStats.total_all_records || 0),
       voting_status: settings.voting_status,
       results_publication_status: settings.results_publication_status,
       recent_audit: recentAudit.rows,
@@ -496,11 +514,15 @@ export async function getAdminResults(req: Request, res: Response): Promise<void
         p.photo_original_key,
         p.participant_type,
         p.status,
-        COUNT(v.id) as total_votes
+        (
+          COALESCE((SELECT COUNT(*) FROM votes v WHERE v.participant_id = p.id AND v.status = 'valid'), 0) +
+          COALESCE((SELECT COUNT(*) FROM live_votes lv WHERE lv.participant_id = p.id AND lv.vote_value = 'yes'), 0)
+        ) as total_votes,
+        COALESCE((SELECT COUNT(*) FROM votes v WHERE v.participant_id = p.id AND v.status = 'valid'), 0) as web_votes,
+        COALESCE((SELECT COUNT(*) FROM live_votes lv WHERE lv.participant_id = p.id AND lv.vote_value = 'yes'), 0) as live_votes,
+        COALESCE((SELECT COUNT(*) FROM live_votes lv WHERE lv.participant_id = p.id AND lv.vote_value = 'no'), 0) as passed_votes
       FROM participants p
-      LEFT JOIN votes v ON p.id = v.participant_id AND v.status = 'valid'
       WHERE p.status = 'approved'
-      GROUP BY p.id, p.contest_number, p.public_display_name, p.costume_title, p.photo_original_key, p.participant_type, p.status
       ORDER BY total_votes DESC, p.contest_number ASC
     `);
 

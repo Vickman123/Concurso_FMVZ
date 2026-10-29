@@ -33,6 +33,8 @@ interface LiveParticipant {
   photo_thumbnail_key?: string;
   category?: string;
   live_yes_votes?: number;
+  web_votes?: number;
+  total_votes?: number;
 }
 
 interface LiveState {
@@ -266,7 +268,9 @@ export const LiveProjector: React.FC = () => {
   const participant = state.current_participant;
   const topParticipants = [...state.participants]
     .sort((a, b) => {
-      const voteDiff = (b.live_yes_votes || 0) - (a.live_yes_votes || 0);
+      const aCount = Number(a.total_votes ?? a.live_yes_votes ?? 0);
+      const bCount = Number(b.total_votes ?? b.live_yes_votes ?? 0);
+      const voteDiff = bCount - aCount;
       if (voteDiff !== 0) return voteDiff;
       // Criterio secundario de desempate automático: número de participante menor (orden de registro)
       return (a.contest_number || 0) - (b.contest_number || 0);
@@ -448,7 +452,7 @@ export const LiveProjector: React.FC = () => {
                     <p className="text-xs text-halloween-muted">{topParticipants[1].public_display_name}</p>
                   </div>
                   <div className="px-4 py-2 rounded-xl bg-surface-raised border border-halloween-border font-mono text-sm text-halloween-lavender">
-                    {topParticipants[1].live_yes_votes || 0} Votos
+                    {topParticipants[1].total_votes ?? topParticipants[1].live_yes_votes ?? 0} Votos
                   </div>
                 </div>
               )}
@@ -479,7 +483,7 @@ export const LiveProjector: React.FC = () => {
                     <p className="text-sm text-halloween-white">{topParticipants[0].public_display_name}</p>
                   </div>
                   <div className="px-6 py-2.5 rounded-xl bg-amber-500/20 border border-amber-400/50 font-mono text-lg text-amber-300 font-bold">
-                    {topParticipants[0].live_yes_votes || 0} Votos de la Comunidad
+                    {topParticipants[0].total_votes ?? topParticipants[0].live_yes_votes ?? 0} Votos de la Comunidad
                   </div>
                 </div>
               )}
@@ -510,7 +514,7 @@ export const LiveProjector: React.FC = () => {
                     <p className="text-xs text-halloween-muted">{topParticipants[2].public_display_name}</p>
                   </div>
                   <div className="px-4 py-2 rounded-xl bg-surface-raised border border-halloween-border font-mono text-sm text-halloween-lavender">
-                    {topParticipants[2].live_yes_votes || 0} Votos
+                    {topParticipants[2].total_votes ?? topParticipants[2].live_yes_votes ?? 0} Votos
                   </div>
                 </div>
               )}

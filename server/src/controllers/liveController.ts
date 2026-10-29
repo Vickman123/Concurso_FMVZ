@@ -138,11 +138,14 @@ export async function fetchCurrentLiveState() {
   // 4. All participants for switcher and ranking (include approved and pending for testing)
   const allPartsRes = await db.query(`
     SELECT p.id, p.contest_number, p.public_display_name, p.costume_title, p.photo_thumbnail_key, p.photo_original_key, p.status,
-           COUNT(lv.id) FILTER (WHERE lv.vote_value = 'yes') as live_yes_votes
+           COALESCE((SELECT COUNT(*) FROM live_votes lv WHERE lv.participant_id = p.id AND lv.vote_value = 'yes'), 0) as live_yes_votes,
+           COALESCE((SELECT COUNT(*) FROM votes v WHERE v.participant_id = p.id AND v.status = 'valid'), 0) as web_votes,
+           (
+             COALESCE((SELECT COUNT(*) FROM live_votes lv WHERE lv.participant_id = p.id AND lv.vote_value = 'yes'), 0) +
+             COALESCE((SELECT COUNT(*) FROM votes v WHERE v.participant_id = p.id AND v.status = 'valid'), 0)
+           ) as total_votes
     FROM participants p
-    LEFT JOIN live_votes lv ON p.id = lv.participant_id
     WHERE p.status IN ('approved', 'pending')
-    GROUP BY p.id, p.contest_number, p.public_display_name, p.costume_title, p.photo_thumbnail_key, p.photo_original_key, p.status
     ORDER BY p.contest_number ASC
   `);
 
@@ -157,7 +160,9 @@ export async function fetchCurrentLiveState() {
     total_voters_registered: totalVotersRegistered,
     participants: allPartsRes.rows.map(r => ({
       ...r,
-      live_yes_votes: parseInt(r.live_yes_votes || '0', 10)
+      live_yes_votes: parseInt(r.live_yes_votes || '0', 10),
+      web_votes: parseInt(r.web_votes || '0', 10),
+      total_votes: parseInt(r.total_votes || '0', 10),
     })),
     connected_clients: Math.max(1, sseClients.size),
     updated_at: session.updated_at || new Date().toISOString(),

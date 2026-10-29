@@ -203,8 +203,12 @@ export const AdminResults: React.FC = () => {
                       {r.participant_type === 'student' ? 'Estudiante' : 'Trabajador'}
                     </td>
                     <td className="py-3 px-4 text-right">
-                      <span className="font-display font-bold text-base text-halloween-orange">
+                      <span className="font-display font-bold text-base text-halloween-orange block">
                         {r.total_votes}
+                      </span>
+                      <span className="text-[10px] text-gray-400 block whitespace-nowrap">
+                        {r.live_votes || 0} en vivo · {r.web_votes || 0} web
+                        {Number(r.passed_votes || 0) > 0 ? ` (${r.passed_votes} pasaron)` : ''}
                       </span>
                     </td>
                   </tr>

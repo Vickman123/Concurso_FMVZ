@@ -189,19 +189,26 @@ export const AdminDashboard: React.FC = () => {
         {/* Total Votes */}
         <div className="p-5 rounded-3xl bg-surface-card border border-halloween-border">
           <div className="flex items-center justify-between text-halloween-muted mb-2">
-            <span className="text-xs font-semibold">Votos Válidos</span>
+            <span className="text-xs font-semibold">Votos Válidos Totales</span>
             <Heart className="w-5 h-5 text-halloween-orange" />
           </div>
           <div className="font-display font-extrabold text-3xl text-white">
             {stats?.total_votes || 0}
           </div>
-          <Link
-            to="/admin/resultados"
-            className="text-[11px] text-halloween-lavender hover:underline mt-2 inline-flex items-center gap-1"
-          >
-            <span>Ver conteo en vivo</span>
-            <ArrowRight className="w-3 h-3" />
-          </Link>
+          <div className="text-[11px] text-gray-400 mt-2 flex items-center justify-between">
+            <span>En Vivo: <strong className="text-halloween-orange">{stats?.live_votes || 0}</strong></span>
+            <span>Web: <strong className="text-purple-300">{stats?.web_votes || 0}</strong></span>
+          </div>
+          <div className="text-[10px] text-halloween-muted mt-1 flex items-center justify-between">
+            <span>{stats?.passed_votes ? `${stats.passed_votes} pasaron` : '100% participación'}</span>
+            <Link
+              to="/admin/resultados"
+              className="text-halloween-lavender hover:underline inline-flex items-center gap-0.5"
+            >
+              <span>Detalles</span>
+              <ArrowRight className="w-2.5 h-2.5" />
+            </Link>
+          </div>
         </div>
       </div>
 
