@@ -27,7 +27,7 @@ export const AdminLayout: React.FC = () => {
 
   const navItems = [
     { label: 'Dashboard', path: '/admin', icon: LayoutDashboard },
-    { label: 'En Vivo (Kahoot)', path: '/admin/en-vivo', icon: Radio },
+    { label: 'En Vivo', path: '/admin/en-vivo', icon: Radio },
     { label: 'Participantes', path: '/admin/participantes', icon: Users },
     { label: 'Fotografías', path: '/admin/fotografias', icon: Camera },
     { label: 'Votos', path: '/admin/votos', icon: Heart },

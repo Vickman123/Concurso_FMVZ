@@ -5,7 +5,7 @@ import { normalizeIdentifier } from '../utils/validation';
 // Real-time SSE Clients Pool
 const sseClients = new Set<Response>();
 
-// Timer reference for Kahoot auto-closing voting
+// Timer reference for auto-closing voting
 let liveVotingTimer: NodeJS.Timeout | null = null;
 
 export function broadcastLiveEvent(eventType: string, data: any) {

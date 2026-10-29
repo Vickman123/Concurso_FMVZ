@@ -166,7 +166,7 @@ export const LiveAnnouncementModal: React.FC = () => {
               </h2>
 
               <p className="text-sm text-halloween-lavender leading-relaxed">
-                Únete ahora para participar en el <strong>Segundo Concurso de Disfraces</strong> y calificar a cada participante en tiempo real al estilo Kahoot desde tu teléfono.
+                Únete ahora para participar en el <strong>Segundo Concurso de Disfraces</strong> y calificar a cada participante en tiempo real directamente desde tu teléfono.
               </p>
             </div>
 

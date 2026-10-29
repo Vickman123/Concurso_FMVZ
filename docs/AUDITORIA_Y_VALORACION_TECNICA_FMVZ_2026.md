@@ -41,7 +41,7 @@ El sistema es una plataforma integral diseñada específicamente para certámene
 ```
 
 1. **Portal Público y Galería (`/`, `/participantes`, `/registrar`, `/votar`):** Permite a la comunidad inscribirse, consultar el estatus de su ficha con folio alfanumérico, explorar disfraces aprobados y votar validando su calidad de alumno o trabajador.
-2. **Consola y Visor del Escenario en Vivo (`/en-vivo`, `/votar/en-vivo`):** Plataforma sincrónica inspirada en la dinámica de *Kahoot/Twitch*, donde el auditorio proyecta al concursante y la audiencia vota en tiempo real desde su celular dentro de ventanas temporizadas (30 a 60 segundos).
+2. **Consola y Visor del Escenario en Vivo (`/en-vivo`, `/votar/en-vivo`):** Plataforma sincrónica interactiva, donde el auditorio proyecta al concursante y la audiencia vota en tiempo real desde su celular dentro de ventanas temporizadas (30 a 60 segundos).
 3. **Consola de Administración y Auditoría (`/admin/*`):** Panel restringido con roles (`admin` y `operator`), moderación de fotografías, control remoto de pasarela, generador de carteles QR oficiales y bitácora de trazabilidad inmutable.
 
 ---
@@ -134,7 +134,7 @@ Se presenta la estimación formal del esfuerzo que tomaría desarrollar este sis
 | **06** | Módulo de registro de participantes, folios y subida de fotos | Media-Alta | 48 hrs | Full-stack Mid | $24,000 | $40,800 |
 | **07** | Módulo de votación web con prevención atómica de duplicados | Alta | 42 hrs | Backend Senior | $25,200 | $42,000 |
 | **08** | Motor de streaming SSE en tiempo real y *heartbeat* | Alta | 38 hrs | Backend Senior | $22,800 | $38,000 |
-| **09** | Consola del Escenario en Vivo (Kahoot mode y controles) | Alta | 55 hrs | Full-stack Senior | $33,000 | $55,000 |
+| **09** | Consola del Escenario en Vivo (Control de pasarela y votos) | Alta | 55 hrs | Full-stack Senior | $33,000 | $55,000 |
 | **10** | Visor de proyección 16:9 4K con QR dinámico y confeti | Media-Alta | 40 hrs | Frontend Senior | $22,000 | $36,000 |
 | **11** | Panel administrativo (Dashboard, moderación, ajustes, métricas) | Media-Alta | 60 hrs | Full-stack Mid | $30,000 | $51,000 |
 | **12** | Módulo de auditoría, bitácora inmutable y exportación CSV | Media | 30 hrs | Backend Mid | $15,000 | $25,500 |
@@ -296,7 +296,7 @@ CONCURSO FMVZ/
 │   │   ├── LiveVoter.tsx (Control móvil para votación secreta)
 │   │   └── admin/
 │   │       ├── AdminDashboard.tsx (Métricas y switch de votación)
-│   │       ├── AdminLiveControl.tsx (Consola Kahoot con temporizador)
+│   │       ├── AdminLiveControl.tsx (Consola de pasarela con temporizador)
 │   │       ├── AdminParticipants.tsx (Expedientes y dictaminación)
 │   │       ├── AdminPhotos.tsx (Bandeja rápida de moderación)
 │   │       ├── AdminVotes.tsx (Padrón con folios y exportación CSV)

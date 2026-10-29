@@ -462,7 +462,7 @@ export async function exportVotesCsv(req: Request, res: Response): Promise<void>
       return {
         '#': idx + 1,
         'Folio de Auditoría': r.confirmation_folio,
-        'Modalidad': isLive ? 'En Vivo (Kahoot)' : 'Web Tradicional',
+        'Modalidad': isLive ? 'En Vivo' : 'Web Tradicional',
         'Tipo de Votante': voterTypeLabel,
         'Número de Cuenta / Identificador': r.normalized_identifier,
         'Nombre Registrado': r.voter_name || 'N/A',

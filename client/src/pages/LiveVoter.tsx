@@ -284,7 +284,7 @@ export const LiveVoter: React.FC = () => {
             <EventLogo size="lg" className="mx-auto mb-3 justify-center" />
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-halloween-orange/20 border border-halloween-orange/40 text-halloween-orange text-xs font-bold uppercase tracking-wider mb-2">
               <Radio className="w-3.5 h-3.5" />
-              <span>VOTACIÓN EN VIVO · KAHOOT MODE FMVZ</span>
+              <span>VOTACIÓN EN VIVO · FMVZ UNAM</span>
             </div>
             <h1 className="font-display font-black text-2xl text-white">
               Identifícate para Votar
@@ -604,7 +604,7 @@ export const LiveVoter: React.FC = () => {
         </div>
       )}
 
-      {/* Bottom Audience Reaction Toolbar (Kahoot / Twitch style) */}
+      {/* Bottom Audience Reaction Toolbar */}
       <footer className="p-3 border-t border-halloween-border/60 bg-[#0A0D1B]/95 backdrop-blur-md sticky bottom-0 z-30">
         <div className="flex items-center justify-between mb-2 px-1">
           <span className="text-[10px] text-halloween-muted font-bold uppercase tracking-wider flex items-center gap-1">

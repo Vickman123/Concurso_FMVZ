@@ -265,7 +265,12 @@ export const LiveProjector: React.FC = () => {
 
   const participant = state.current_participant;
   const topParticipants = [...state.participants]
-    .sort((a, b) => (b.live_yes_votes || 0) - (a.live_yes_votes || 0))
+    .sort((a, b) => {
+      const voteDiff = (b.live_yes_votes || 0) - (a.live_yes_votes || 0);
+      if (voteDiff !== 0) return voteDiff;
+      // Criterio secundario de desempate automático: número de participante menor (orden de registro)
+      return (a.contest_number || 0) - (b.contest_number || 0);
+    })
     .slice(0, 3);
 
   // If stage is deactivated by admin
@@ -744,7 +749,7 @@ export const LiveProjector: React.FC = () => {
           <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping hidden sm:block" />
           <div>
             <span className="font-display font-bold text-xs sm:text-sm text-white block">
-              Votación en Vivo · Kahoot Mode FMVZ
+              Votación en Vivo · FMVZ UNAM
             </span>
             <span className="text-[11px] text-halloween-muted">
               Auditorio de la Facultad de Medicina Veterinaria y Zootecnia

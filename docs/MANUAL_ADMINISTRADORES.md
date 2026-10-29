@@ -107,7 +107,7 @@ Diseñada para revisar rápidamente las imágenes subidas por los participantes:
 
 **Ruta:** `/admin/en-vivo`
 
-Esta es la consola central para coordinar el evento presencial del **3 de noviembre de 2026**. Funciona con sincronización en tiempo real (estilo Kahoot/Twitch).
+Esta es la consola central para coordinar el evento presencial del **3 de noviembre de 2026**. Funciona con sincronización interactiva en tiempo real.
 
 ### 5.1 Activar el Escenario (Visibilidad Pública)
 - El escenario permanece oculto por defecto para no confundir a los usuarios antes del evento.

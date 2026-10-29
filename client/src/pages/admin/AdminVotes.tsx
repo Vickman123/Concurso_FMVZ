@@ -130,7 +130,7 @@ export const AdminVotes: React.FC = () => {
       return [
         idx + 1,
         `"${r.confirmation_folio}"`,
-        `"${isLive ? 'En Vivo (Kahoot)' : 'Web Tradicional'}"`,
+        `"${isLive ? 'En Vivo' : 'Web Tradicional'}"`,
         `"${voterTypeLabel}"`,
         `"${r.normalized_identifier}"`,
         `"${r.voter_name || 'N/A'}"`,
@@ -196,7 +196,7 @@ export const AdminVotes: React.FC = () => {
             Registro y Auditoría de Votos
           </h1>
           <p className="text-xs text-halloween-muted mt-1">
-            Cada voto registrado en vivo (Kahoot) y en la plataforma web cuenta con trazabilidad completa para validación del jurado.
+            Cada voto registrado en vivo y en la plataforma web cuenta con trazabilidad completa para validación del jurado.
           </p>
         </div>
 
@@ -238,7 +238,7 @@ export const AdminVotes: React.FC = () => {
         <div className="p-4 rounded-2xl glass-panel border border-purple-500/40 bg-purple-950/20">
           <span className="text-[11px] text-purple-300 uppercase tracking-wider font-bold block flex items-center gap-1">
             <Radio className="w-3 h-3 text-red-400 animate-pulse" />
-            En Vivo (Kahoot)
+            En Vivo
           </span>
           <span className="font-mono font-black text-2xl sm:text-3xl text-purple-200">
             {votes.filter((v) => v.vote_source === 'live').length}
@@ -430,7 +430,7 @@ export const AdminVotes: React.FC = () => {
                       {v.vote_source === 'live' ? (
                         <span className="inline-flex items-center gap-1 text-purple-300 text-[11px] font-semibold bg-purple-950/40 px-2 py-0.5 rounded-lg border border-purple-500/30">
                           <Radio className="w-3 h-3 text-red-400 animate-pulse" />
-                          <span>En Vivo (Kahoot)</span>
+                          <span>En Vivo</span>
                         </span>
                       ) : (
                         <span className="inline-flex items-center gap-1 text-blue-300 text-[11px] font-semibold bg-blue-950/40 px-2 py-0.5 rounded-lg border border-blue-500/30">

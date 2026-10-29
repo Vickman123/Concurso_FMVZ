@@ -75,7 +75,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenQr }) => {
             {isLiveActive ? (
               <Link
                 to="/en-vivo"
-                title="Votación sincronizada en vivo (Modo Kahoot)"
+                title="Votación sincronizada en vivo"
                 className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-red-600 via-orange-500 to-amber-500 hover:brightness-110 shadow-[0_0_20px_rgba(239,68,68,0.5)] transition-all animate-pulse"
               >
                 <Radio className="w-4 h-4" />

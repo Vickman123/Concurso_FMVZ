@@ -58,7 +58,7 @@ export const Gallery: React.FC = () => {
           </p>
         </div>
 
-        {/* Live Kahoot Voting State or Exhibition Mode */}
+        {/* Live Voting State or Exhibition Mode */}
         <div className="flex items-center gap-2">
           {isLiveActive ? (
             <Link
@@ -66,7 +66,7 @@ export const Gallery: React.FC = () => {
               className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold bg-gradient-to-r from-red-600 to-amber-500 text-white shadow-[0_0_15px_rgba(239,68,68,0.5)] animate-pulse hover:brightness-110 transition-all"
             >
               <Radio className="w-3.5 h-3.5" />
-              <span>Votación en vivo (Kahoot)</span>
+              <span>Votación en vivo</span>
             </Link>
           ) : (
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-[#15182A] text-halloween-muted border border-halloween-border">

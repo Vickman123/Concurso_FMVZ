@@ -160,7 +160,7 @@ export const ParticipantDetail: React.FC = () => {
                 className="w-full flex items-center justify-center gap-3 py-4 rounded-2xl font-display font-extrabold text-base text-white bg-gradient-to-r from-red-600 via-orange-500 to-amber-500 hover:brightness-110 shadow-[0_0_25px_rgba(239,68,68,0.5)] transition-all animate-pulse transform hover:-translate-y-0.5 active:scale-95"
               >
                 <Radio className="w-5 h-5 text-white" />
-                <span>¡Pasarela en Vivo activa! Ir a votar (Kahoot)</span>
+                <span>¡Pasarela en Vivo activa! Ir a votar en vivo</span>
               </button>
             ) : (
               <div className="p-4 rounded-2xl bg-surface-raised border border-halloween-border text-center">
@@ -168,7 +168,7 @@ export const ParticipantDetail: React.FC = () => {
                   🎭 Modo Visualización y Exhibición
                 </span>
                 <span className="text-[11px] text-gray-400 mt-1 block">
-                  La votación se habilitará en vivo durante la pasarela en el auditorio (estilo Kahoot).
+                  La votación se habilitará en vivo durante la pasarela en el auditorio.
                 </span>
               </div>
             )}

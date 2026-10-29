@@ -123,6 +123,17 @@ export const AdminResults: React.FC = () => {
         </div>
       </div>
 
+      {/* Regla de Desempate */}
+      <div className="p-3.5 rounded-2xl bg-[#0F1222] border border-halloween-purple/40 text-[11px] text-gray-300 flex items-start gap-2.5">
+        <span className="text-base leading-none">⚖️</span>
+        <div className="space-y-0.5">
+          <strong className="text-white block font-semibold">Regla de desempate por sistema:</strong>
+          <span>
+            En caso de empate exacto en cantidad de votos, el sistema ordena de forma predeterminada por número de participante (<code className="text-halloween-orange font-mono"># menor registrado primero</code>). Si el empate afecta los puestos de premiación (1º, 2º o 3º lugar), el Jurado Calificador puede emitir un voto de calidad en el auditorio o declarar empate técnico y premio compartido.
+          </span>
+        </div>
+      </div>
+
       {/* Results Table */}
       <div className="rounded-3xl bg-surface-card border border-halloween-border overflow-hidden">
         <div className="overflow-x-auto">
@@ -139,6 +150,10 @@ export const AdminResults: React.FC = () => {
             <tbody className="divide-y divide-halloween-border/40">
               {results.map((r, idx) => {
                 const rank = idx + 1;
+                const isTiedWithPrevious = idx > 0 && Number(r.total_votes) === Number(results[idx - 1].total_votes);
+                const isTiedWithNext = idx < results.length - 1 && Number(r.total_votes) === Number(results[idx + 1].total_votes);
+                const isTied = (isTiedWithPrevious || isTiedWithNext) && Number(r.total_votes) > 0;
+
                 return (
                   <tr
                     key={r.id}
@@ -153,10 +168,20 @@ export const AdminResults: React.FC = () => {
                     }`}
                   >
                     <td className="py-3 px-4 font-display font-bold">
-                      {rank === 1 && <span className="text-amber-400 text-sm">🥇 1er Lugar</span>}
-                      {rank === 2 && <span className="text-slate-300 text-sm">🥈 2do Lugar</span>}
-                      {rank === 3 && <span className="text-amber-500 text-sm">🥉 3er Lugar</span>}
-                      {rank > 3 && <span className="text-gray-400">#{rank}</span>}
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        {rank === 1 && <span className="text-amber-400 text-sm">🥇 1er Lugar</span>}
+                        {rank === 2 && <span className="text-slate-300 text-sm">🥈 2do Lugar</span>}
+                        {rank === 3 && <span className="text-amber-500 text-sm">🥉 3er Lugar</span>}
+                        {rank > 3 && <span className="text-gray-400">#{rank}</span>}
+                        {isTied && (
+                          <span
+                            className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30"
+                            title="Empate exacto de votos con otro participante"
+                          >
+                            Empate
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td className="py-3 px-4 flex items-center gap-3">
                       <img

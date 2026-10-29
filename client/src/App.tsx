@@ -84,7 +84,7 @@ const AppContent: React.FC = () => {
           <Route path="/aviso-de-privacidad" element={<PrivacyNotice />} />
           <Route path="/logos" element={<LogoShowcase />} />
 
-          {/* Kahoot Live Contest & Auditorium Projector */}
+          {/* Escenario en Vivo y Proyector del Auditorio */}
           <Route path="/en-vivo" element={<LiveProjector />} />
           <Route path="/proyector" element={<LiveProjector />} />
           <Route path="/votar/en-vivo" element={<LiveVoter />} />
