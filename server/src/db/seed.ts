@@ -8,6 +8,24 @@ import { INITIAL_57_PARTICIPANTS } from './initialData';
 import { generateCostumeSvgs } from './generateAvatars';
 
 export async function runSeed(): Promise<void> {
+  // CRITICAL SAFETY CHECK: Prevent overwriting real production data or Supabase database
+  const dbUrl = process.env.DATABASE_URL || '';
+  const isCloudOrProduction =
+    process.env.NODE_ENV === 'production' ||
+    dbUrl.includes('supabase') ||
+    dbUrl.includes('neon') ||
+    dbUrl.includes('render') ||
+    dbUrl.includes('pooler');
+
+  if (isCloudOrProduction && process.env.ALLOW_DANGEROUS_SEED !== 'true') {
+    console.warn('\n🛑 =========================================================================');
+    console.warn('🛑 [SEGURIDAD ACTIVA] runSeed() fue BLOQUEADO automáticamente.');
+    console.warn('🛑 Motivo: Se detectó un entorno de producción o conexión en la nube (Supabase).');
+    console.warn('🛑 Para proteger los registros reales del concurso, el sembrado está desactivado.');
+    console.warn('🛑 =========================================================================\n');
+    return;
+  }
+
   console.log('[Seed] Starting database migration & seed process...');
   await runMigrations();
   const db = await getDb();
@@ -40,22 +58,9 @@ export async function runSeed(): Promise<void> {
       updated_at = CURRENT_TIMESTAMP;
   `);
 
-  // 3. Prize Categories
-  console.log('[Seed] Seeding prize categories...');
-  const prizeCategories = [
-    { name: '1er Lugar General', amount: 10000, method: 'Mayor cantidad de votos verificados de la comunidad UNAM', rank: 1, qty: 1 },
-    { name: '2do Lugar General', amount: 7000, method: 'Segundo lugar en votos verificados de la comunidad UNAM', rank: 2, qty: 1 },
-    { name: '3er Lugar General', amount: 6000, method: 'Tercer lugar en votos verificados de la comunidad UNAM', rank: 3, qty: 1 },
-    { name: '20 Premios Adicionales', amount: 5000, method: 'Modalidad por definir en las bases oficiales (no asignación automática por clasificación)', rank: 4, qty: 20 },
-  ];
-
+  // 3. Prize Categories (vaciado / sin precargar)
+  console.log('[Seed] Clearing prize categories...');
   await db.query('DELETE FROM prize_categories;');
-  for (const p of prizeCategories) {
-    await db.query(`
-      INSERT INTO prize_categories (name, amount_mxn, allocation_method, rank_position, quantity, status)
-      VALUES ($1, $2, $3, $4, $5, 'active')
-    `, [p.name, p.amount, p.method, p.rank, p.qty]);
-  }
 
   // 4. Admin Users
   console.log('[Seed] Seeding admin accounts...');
@@ -139,18 +144,8 @@ export async function runSeed(): Promise<void> {
     ON CONFLICT (id) DO NOTHING;
   `);
 
-  // 7. Audit Log
-  await db.query(`
-    INSERT INTO audit_logs (admin_id, action, entity_type, entity_id, reason, metadata)
-    VALUES (
-      1,
-      'SEED_DATABASE_INITIALIZED',
-      'system',
-      'contest_settings:1',
-      'Carga inicial del sistema con 57 participantes, administradores y parámetros del evento',
-      $1
-    )
-  `, [JSON.stringify({ participants_count: INITIAL_57_PARTICIPANTS.length, timestamp: new Date().toISOString() })]);
+  // 7. Audit Log (limpiar registros de auditoría de prueba)
+  await db.query('DELETE FROM audit_logs;');
 
   console.log('[Seed] Database initialization completed successfully! 🎉');
 }

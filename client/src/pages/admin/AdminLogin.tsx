@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Lock, Mail, AlertCircle, ArrowLeft, Shield, Sparkles } from 'lucide-react';
+import { Lock, Mail, AlertCircle, ArrowLeft } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
 export const AdminLogin: React.FC = () => {
   const navigate = useNavigate();
   const { login } = useAuth();
 
-  const [email, setEmail] = useState('admin@fmvz.unam.mx');
-  const [password, setPassword] = useState('Halloween2026!');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -24,16 +24,6 @@ export const AdminLogin: React.FC = () => {
       navigate('/admin');
     } else {
       setError(res.error || 'Credenciales inválidas');
-    }
-  };
-
-  const fillCredentials = (type: 'admin' | 'operator') => {
-    if (type === 'admin') {
-      setEmail('admin@fmvz.unam.mx');
-      setPassword('Halloween2026!');
-    } else {
-      setEmail('operador@fmvz.unam.mx');
-      setPassword('Operador2026!');
     }
   };
 
@@ -79,7 +69,8 @@ export const AdminLogin: React.FC = () => {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="admin@fmvz.unam.mx"
+                  placeholder="ejemplo@fmvz.unam.mx"
+                  autoComplete="off"
                   className="w-full pl-10 pr-4 py-3 rounded-xl bg-surface-raised border border-halloween-border text-xs sm:text-sm text-white placeholder-halloween-muted focus:outline-none focus:border-halloween-purple"
                 />
               </div>
@@ -95,7 +86,8 @@ export const AdminLogin: React.FC = () => {
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••••••"
+                  placeholder="Ingresa tu contraseña"
+                  autoComplete="current-password"
                   className="w-full pl-10 pr-4 py-3 rounded-xl bg-surface-raised border border-halloween-border text-xs sm:text-sm text-white placeholder-halloween-muted focus:outline-none focus:border-halloween-purple"
                 />
               </div>
@@ -109,31 +101,6 @@ export const AdminLogin: React.FC = () => {
               {loading ? 'Validando credenciales...' : 'Iniciar sesión'}
             </button>
           </form>
-
-          {/* Quick Demo Credentials for Reviewers */}
-          <div className="p-4 rounded-2xl bg-surface-raised border border-halloween-border space-y-2 text-xs">
-            <span className="text-[11px] font-bold text-halloween-orange uppercase tracking-wider block">
-              Credenciales de prueba preconfiguradas:
-            </span>
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={() => fillCredentials('admin')}
-                className="p-2 rounded-xl bg-surface-card hover:bg-surface-subtle text-left border border-halloween-border/50 text-[11px]"
-              >
-                <strong className="block text-amber-300">Administrador</strong>
-                <span className="text-gray-400 block truncate">admin@fmvz.unam.mx</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => fillCredentials('operator')}
-                className="p-2 rounded-xl bg-surface-card hover:bg-surface-subtle text-left border border-halloween-border/50 text-[11px]"
-              >
-                <strong className="block text-blue-300">Operador</strong>
-                <span className="text-gray-400 block truncate">operador@fmvz.unam.mx</span>
-              </button>
-            </div>
-          </div>
         </div>
       </div>
     </div>

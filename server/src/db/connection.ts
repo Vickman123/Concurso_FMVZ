@@ -105,6 +105,11 @@ export async function initDb(): Promise<void> {
       idleTimeoutMillis: 30000,
       connectionTimeoutMillis: 5000,
     });
+
+    pgPool.on('error', (err) => {
+      console.error('[DB Pool Error] Unexpected idle client error:', err.message);
+    });
+
     // Test connection
     const client = await pgPool.connect();
     client.release();

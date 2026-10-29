@@ -9,8 +9,13 @@ const baseUrl = 'http://localhost:4003';
 
 describe('FMVZ Halloween Backend API Test Suite', () => {
   test.before(async () => {
-    // Seed DB first
-    await runSeed();
+    // Safety check: Never seed remote Supabase / production database during test suite
+    const dbUrl = process.env.DATABASE_URL || '';
+    if (!dbUrl.includes('supabase') && !dbUrl.includes('neon') && !dbUrl.includes('render') && !dbUrl.includes('pooler')) {
+      await runSeed();
+    } else {
+      console.log('[Test Suite] Remote database detected; skipping destructive seed in tests.');
+    }
     await new Promise<void>((resolve) => {
       server = app.listen(4003, () => {
         resolve();
