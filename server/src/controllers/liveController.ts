@@ -270,9 +270,14 @@ export async function adminControlLive(req: Request, res: Response): Promise<voi
       const votingDuration = seconds || 30;
       await db.query(`
         UPDATE live_stage_session
-        SET stage_status = 'voting_open', voting_seconds_left = $1, updated_at = CURRENT_TIMESTAMP
+        SET stage_status = 'voting_open', voting_seconds_left = $1, is_active = true, updated_at = CURRENT_TIMESTAMP
         WHERE id = 1
       `, [votingDuration]);
+      await db.query(`
+        UPDATE contest_settings
+        SET is_live_active = true, updated_at = CURRENT_TIMESTAMP
+        WHERE id = 1
+      `);
 
       // Server-side automatic timer to close voting after time runs out
       if (liveVotingTimer) clearTimeout(liveVotingTimer);
@@ -357,7 +362,7 @@ export async function adminControlLive(req: Request, res: Response): Promise<voi
 
 export async function castLiveVote(req: Request, res: Response): Promise<void> {
   try {
-    const { voter_type, institutional_identifier, full_name, vote } = req.body;
+    const { voter_type, institutional_identifier, full_name, vote, count } = req.body;
 
     if (!voter_type || !institutional_identifier || !vote) {
       res.status(400).json({ error: 'Faltan campos obligatorios para votar' });
@@ -367,14 +372,14 @@ export async function castLiveVote(req: Request, res: Response): Promise<void> {
     const normalizedId = normalizeIdentifier(institutional_identifier);
     const db = await getDb();
 
-    // Check stage session
+    // Check stage session (must be in voting_open status)
     const sessionRes = await db.query('SELECT stage_status, current_participant_id, is_active FROM live_stage_session WHERE id = 1');
     const session = sessionRes.rows[0];
 
-    if (!session || !session.is_active || session.stage_status !== 'voting_open' || !session.current_participant_id) {
+    if (!session || session.stage_status !== 'voting_open' || !session.current_participant_id) {
       res.status(403).json({
         error: 'VOTING_NOT_OPEN',
-        message: 'El escenario en vivo no está activo o la votación no está abierta en este momento.',
+        message: 'La votación en vivo no está abierta en este momento.',
       });
       return;
     }
@@ -398,15 +403,18 @@ export async function castLiveVote(req: Request, res: Response): Promise<void> {
       voterId = newVoter.rows[0].id;
     }
 
-    // Cast or update live vote for current participant
+    // Aplausómetro de votos: permite registrar múltiples votos por participante en tiempo real
     const voteVal = vote === 'no' ? 'no' : 'yes';
-    await db.query(`
-      INSERT INTO live_votes (voter_id, participant_id, vote_value)
-      VALUES ($1, $2, $3)
-      ON CONFLICT (voter_id, participant_id) DO UPDATE SET vote_value = EXCLUDED.vote_value, created_at = CURRENT_TIMESTAMP
-    `, [voterId, session.current_participant_id, voteVal]);
+    const voteCount = Math.max(1, Math.min(25, Number(count || 1)));
 
-    // Recalculate votes for current participant and broadcast
+    if (voteVal === 'yes') {
+      const rows = Array(voteCount).fill(`(${voterId}, ${session.current_participant_id}, 'yes')`).join(',');
+      await db.query(`INSERT INTO live_votes (voter_id, participant_id, vote_value) VALUES ${rows}`);
+    } else {
+      await db.query(`INSERT INTO live_votes (voter_id, participant_id, vote_value) VALUES ($1, $2, 'no')`, [voterId, session.current_participant_id]);
+    }
+
+    // Recalculate votes for current participant and broadcast immediately
     const votesRes = await db.query(`
       SELECT 
         COUNT(*) FILTER (WHERE vote_value = 'yes') as yes_count,
@@ -430,6 +438,7 @@ export async function castLiveVote(req: Request, res: Response): Promise<void> {
       success: true,
       participant_id: session.current_participant_id,
       vote: voteVal,
+      count: voteCount,
       tally,
     });
   } catch (err: any) {

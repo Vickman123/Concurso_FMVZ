@@ -86,6 +86,7 @@ export const LiveProjector: React.FC = () => {
   });
   const [hasVotedForCurrent, setHasVotedForCurrent] = useState(false);
   const [currentVoteValue, setCurrentVoteValue] = useState<'yes' | 'no' | null>(null);
+  const [stageVotesGiven, setStageVotesGiven] = useState(0);
   const [votingLoading, setVotingLoading] = useState(false);
   const votedParticipantsRef = useRef<Set<number>>(new Set());
 
@@ -258,9 +259,8 @@ export const LiveProjector: React.FC = () => {
   // Reset vote state when stage participant changes
   useEffect(() => {
     if (state.current_participant?.id) {
-      const alreadyVoted = votedParticipantsRef.current.has(state.current_participant.id);
-      setHasVotedForCurrent(alreadyVoted);
-      if (!alreadyVoted) setCurrentVoteValue(null);
+      setStageVotesGiven(0);
+      setCurrentVoteValue(null);
     }
   }, [state.current_participant?.id]);
 
@@ -289,9 +289,45 @@ export const LiveProjector: React.FC = () => {
       setVoter(activeVoter);
     }
 
-    if (!activeVoter || !state.current_participant || votingLoading) return;
+    if (!activeVoter || !state.current_participant) return;
 
-    setVotingLoading(true);
+    if (value === 'no') {
+      setCurrentVoteValue('no');
+      try {
+        await fetch('/api/live/vote', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            voter_type: activeVoter.voter_type,
+            institutional_identifier: activeVoter.institutional_identifier,
+            full_name: activeVoter.full_name,
+            vote: 'no',
+          }),
+        });
+      } catch {}
+      return;
+    }
+
+    // Aplausómetro: cada toque suma un voto en tiempo real
+    setStageVotesGiven((prev) => prev + 1);
+    setCurrentVoteValue('yes');
+    setState((prev) => ({
+      ...prev,
+      current_votes: {
+        ...prev.current_votes,
+        yes_count: prev.current_votes.yes_count + 1,
+      },
+    }));
+
+    try {
+      confetti({
+        particleCount: 20,
+        spread: 55,
+        origin: { y: 0.65 },
+        colors: ['#10B981', '#FF7417', '#8B5CF6'],
+      });
+    } catch {}
+
     try {
       const res = await fetch('/api/live/vote', {
         method: 'POST',
@@ -300,33 +336,25 @@ export const LiveProjector: React.FC = () => {
           voter_type: activeVoter.voter_type,
           institutional_identifier: activeVoter.institutional_identifier,
           full_name: activeVoter.full_name,
-          vote: value,
+          vote: 'yes',
         }),
       });
 
       if (res.ok) {
-        votedParticipantsRef.current.add(state.current_participant.id);
-        setHasVotedForCurrent(true);
-        setCurrentVoteValue(value);
-
-        if (value === 'yes') {
-          try {
-            confetti({
-              particleCount: 50,
-              spread: 60,
-              origin: { y: 0.6 },
-              colors: ['#10B981', '#FF7417', '#8B5CF6'],
-            });
-          } catch {}
+        const data = await res.json();
+        if (data.tally) {
+          setState((prev) => ({
+            ...prev,
+            current_votes: {
+              yes_count: data.tally.yes_count,
+              no_count: data.tally.no_count,
+              total: data.tally.total,
+            },
+          }));
         }
-      } else {
-        const err = await res.json().catch(() => ({}));
-        alert(err.message || 'La votación no está abierta en este momento.');
       }
     } catch {
-      alert('Error al registrar tu voto.');
-    } finally {
-      setVotingLoading(false);
+      // offline silent retry
     }
   };
 
@@ -686,35 +714,29 @@ export const LiveProjector: React.FC = () => {
                     />
                   </div>
 
-                  {/* Real-time incoming vote counter */}
-                  <div className="flex items-center justify-between p-3.5 sm:p-4 rounded-2xl bg-black/40 border border-halloween-border">
-                    <div className="flex items-center gap-2 text-halloween-white">
-                      <ThumbsUp className="w-5 h-5 text-emerald-400" />
-                      <span className="text-sm font-semibold">Votos recibidos en vivo:</span>
+                  {/* Real-time incoming vote counter (Aplausómetro) */}
+                  <div className="p-4 rounded-2xl bg-gradient-to-r from-halloween-orange/20 via-black/60 to-purple-900/30 border-2 border-halloween-orange shadow-glow-orange flex items-center justify-between">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2 text-halloween-orange font-bold text-xs uppercase tracking-wider animate-pulse">
+                        <Flame className="w-4 h-4 text-halloween-orange" />
+                        <span>Aplausómetro en Vivo</span>
+                      </div>
+                      <span className="text-xs text-gray-300 block">
+                        Votos recibidos en tiempo real
+                      </span>
                     </div>
-                    <span className="font-mono font-black text-3xl text-emerald-400">
-                      {state.current_votes.yes_count}
-                    </span>
+                    <div className="text-right">
+                      <span className="font-mono font-black text-4xl sm:text-5xl text-emerald-400 drop-shadow-[0_0_15px_rgba(16,185,129,0.5)]">
+                        {state.current_votes.yes_count}
+                      </span>
+                      <span className="text-[10px] text-emerald-400 font-bold block uppercase tracking-wider">
+                        Votos 🔥
+                      </span>
+                    </div>
                   </div>
 
                   {/* Direct Voting Buttons on Stage View */}
-                  {hasVotedForCurrent ? (
-                    <div className="p-4 rounded-2xl bg-emerald-950/40 border border-emerald-500/50 text-center space-y-1.5 animate-fade-in">
-                      <div className="flex items-center justify-center gap-2 text-emerald-400 font-display font-bold text-base sm:text-lg">
-                        <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
-                        <span>
-                          {currentVoteValue === 'yes'
-                            ? '¡Tu voto fue guardado con éxito!'
-                            : 'Decidiste pasar este disfraz'}
-                        </span>
-                      </div>
-                      <p className="text-xs text-halloween-lavender">
-                        {currentVoteValue === 'yes'
-                          ? 'Tu voto SÍ ha sido contabilizado para este participante.'
-                          : 'Se registró tu decisión sin sumar voto a este disfraz.'}
-                      </p>
-                    </div>
-                  ) : voter ? (
+                  {voter ? (
                     <div className="space-y-3 pt-3 border-t border-halloween-border/70">
                       <div className="flex items-center justify-between text-xs text-halloween-lavender">
                         <span className="flex items-center gap-1.5">
@@ -736,26 +758,21 @@ export const LiveProjector: React.FC = () => {
                         </button>
                       </div>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div className="space-y-2">
                         <button
                           type="button"
                           onClick={() => handleStageVote('yes')}
-                          disabled={votingLoading}
-                          className="py-3.5 px-4 rounded-2xl font-display font-black text-sm sm:text-base text-white bg-gradient-to-r from-halloween-orange via-amber-500 to-halloween-orange shadow-glow-orange hover:brightness-110 active:scale-95 transition-all flex items-center justify-center gap-2 animate-bounce-subtle cursor-pointer disabled:opacity-50"
+                          className="w-full py-4 px-6 rounded-2xl font-display font-black text-base sm:text-lg text-white bg-gradient-to-r from-halloween-orange via-amber-500 to-halloween-orange shadow-glow-orange hover:brightness-110 active:scale-95 transition-all flex items-center justify-center gap-2 animate-bounce-subtle cursor-pointer select-none"
                         >
-                          <ThumbsUp className="w-5 h-5" />
-                          <span>{votingLoading ? 'Guardando...' : '👍 Guardar Voto (Votar SÍ)'}</span>
+                          <ThumbsUp className="w-6 h-6" />
+                          <span>¡VOTAR POR ESTE DISFRAZ! 💥 (+1 VOTO)</span>
                         </button>
 
-                        <button
-                          type="button"
-                          onClick={() => handleStageVote('no')}
-                          disabled={votingLoading}
-                          className="py-3 px-4 rounded-2xl text-xs sm:text-sm font-semibold text-gray-300 bg-surface-raised border border-halloween-border hover:text-white hover:border-gray-500 transition-colors flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
-                        >
-                          <XCircle className="w-4 h-4 text-gray-400" />
-                          <span>⛔ Pasar al Siguiente (No Votar)</span>
-                        </button>
+                        {stageVotesGiven > 0 && (
+                          <p className="text-xs text-emerald-400 font-bold text-center animate-fade-in">
+                            🎉 Has sumado {stageVotesGiven} {stageVotesGiven === 1 ? 'voto' : 'votos'} a este concursante. ¡Sigue tocando!
+                          </p>
+                        )}
                       </div>
                     </div>
                   ) : (
@@ -810,25 +827,15 @@ export const LiveProjector: React.FC = () => {
                       </div>
 
                       {/* Action buttons */}
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+                      <div className="pt-1">
                         <button
                           type="button"
                           onClick={() => handleStageVote('yes')}
-                          disabled={votingLoading || !inlineIdNumber}
-                          className="py-3 px-4 rounded-xl font-display font-black text-sm text-white bg-gradient-to-r from-halloween-orange via-amber-500 to-halloween-orange shadow-glow-orange hover:brightness-110 active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                          disabled={!inlineIdNumber}
+                          className="w-full py-3.5 px-4 rounded-xl font-display font-black text-sm text-white bg-gradient-to-r from-halloween-orange via-amber-500 to-halloween-orange shadow-glow-orange hover:brightness-110 active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                          <ThumbsUp className="w-4 h-4" />
-                          <span>{votingLoading ? 'Guardando...' : '👍 Guardar Voto (Votar SÍ)'}</span>
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => handleStageVote('no')}
-                          disabled={votingLoading || !inlineIdNumber}
-                          className="py-2.5 px-3 rounded-xl text-xs font-semibold text-gray-300 bg-surface-raised border border-halloween-border hover:text-white transition-colors flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          <XCircle className="w-4 h-4 text-gray-400" />
-                          <span>⛔ Pasar al Siguiente (No Votar)</span>
+                          <ThumbsUp className="w-5 h-5" />
+                          <span>¡VOTAR POR ESTE DISFRAZ! 💥 (+1 VOTO)</span>
                         </button>
                       </div>
                     </div>

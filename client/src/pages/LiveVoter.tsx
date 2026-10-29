@@ -45,6 +45,8 @@ export const LiveVoter: React.FC = () => {
   const [stageStatus, setStageStatus] = useState<string>('waiting');
   const [currentParticipant, setCurrentParticipant] = useState<any>(null);
   const [secondsLeft, setSecondsLeft] = useState<number>(30);
+  const [liveVotes, setLiveVotes] = useState<number>(0);
+  const [userVotesGiven, setUserVotesGiven] = useState<number>(0);
   const [hasVotedForCurrent, setHasVotedForCurrent] = useState<boolean>(false);
   const [currentVoteValue, setCurrentVoteValue] = useState<'yes' | 'no' | null>(null);
   const [votingLoading, setVotingLoading] = useState<boolean>(false);
@@ -84,8 +86,17 @@ export const LiveVoter: React.FC = () => {
       } catch {}
     });
 
-    // Fallback poll every 2.5s
-    const pollInterval = setInterval(fetchState, 2500);
+    eventSource.addEventListener('LIVE_VOTE_UPDATED', (e: MessageEvent) => {
+      try {
+        const tally = JSON.parse(e.data);
+        if (tally.yes_count !== undefined) {
+          setLiveVotes(tally.yes_count);
+        }
+      } catch {}
+    });
+
+    // Fallback poll every 2s
+    const pollInterval = setInterval(fetchState, 2000);
 
     return () => {
       eventSource.close();
@@ -100,16 +111,16 @@ export const LiveVoter: React.FC = () => {
     setStageStatus(data.stage_status || 'waiting');
     setSecondsLeft(data.voting_seconds_left || 30);
 
-    // If participant changed, reset voted state for the new one
+    if (data.current_votes?.yes_count !== undefined) {
+      setLiveVotes(data.current_votes.yes_count);
+    }
+
+    // If participant changed, reset counts for the new participant
     if (data.current_participant?.id !== currentParticipant?.id) {
       setCurrentParticipant(data.current_participant);
-      const isAlreadyVoted = data.current_participant?.id
-        ? votedParticipantsRef.current.has(data.current_participant.id)
-        : false;
-      setHasVotedForCurrent(isAlreadyVoted);
-      if (!isAlreadyVoted) {
-        setCurrentVoteValue(null);
-      }
+      setUserVotesGiven(0);
+      setHasVotedForCurrent(false);
+      setCurrentVoteValue(null);
     }
   };
 
@@ -158,11 +169,48 @@ export const LiveVoter: React.FC = () => {
     setVoter(null);
   };
 
-  // Cast vote for participant currently on stage
+  // Cast vote for participant currently on stage (Aplausómetro: multiple votes supported)
   const handleVote = async (value: 'yes' | 'no') => {
-    if (!voter || !currentParticipant || votingLoading) return;
+    if (!voter || !currentParticipant) return;
 
-    setVotingLoading(true);
+    if (value === 'no') {
+      setHasVotedForCurrent(true);
+      setCurrentVoteValue('no');
+      try {
+        await fetch('/api/live/vote', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            voter_type: voter.voter_type,
+            institutional_identifier: voter.institutional_identifier,
+            full_name: voter.full_name,
+            vote: 'no',
+          }),
+        });
+      } catch {}
+      return;
+    }
+
+    // Aplausómetro: cada toque suma un voto en tiempo real
+    setUserVotesGiven((prev) => prev + 1);
+    setLiveVotes((prev) => prev + 1);
+    setCurrentVoteValue('yes');
+
+    // Haptics
+    if (navigator.vibrate) {
+      navigator.vibrate(25);
+    }
+
+    // Small celebratory confetti burst
+    try {
+      confetti({
+        particleCount: 16,
+        spread: 50,
+        origin: { y: 0.72 },
+        colors: ['#FF7417', '#FFA439', '#10B981', '#8B5CF6'],
+      });
+    } catch {}
+
     try {
       const res = await fetch('/api/live/vote', {
         method: 'POST',
@@ -171,38 +219,18 @@ export const LiveVoter: React.FC = () => {
           voter_type: voter.voter_type,
           institutional_identifier: voter.institutional_identifier,
           full_name: voter.full_name,
-          vote: value,
+          vote: 'yes',
         }),
       });
 
       if (res.ok) {
-        votedParticipantsRef.current.add(currentParticipant.id);
-        setHasVotedForCurrent(true);
-        setCurrentVoteValue(value);
-
-        if (value === 'yes') {
-          try {
-            confetti({
-              particleCount: 50,
-              spread: 60,
-              origin: { y: 0.7 },
-              colors: ['#10B981', '#FF7417', '#8B5CF6'],
-            });
-          } catch {}
+        const data = await res.json();
+        if (data.tally?.yes_count !== undefined) {
+          setLiveVotes(data.tally.yes_count);
         }
-
-        // Haptic feedback
-        if (navigator.vibrate) {
-          navigator.vibrate([40, 60, 40]);
-        }
-      } else {
-        const errData = await res.json().catch(() => ({}));
-        alert(errData.message || 'La votación para este participante no está abierta en este momento.');
       }
     } catch {
-      alert('Error de conexión al emitir tu voto.');
-    } finally {
-      setVotingLoading(false);
+      // offline silent retry
     }
   };
 
@@ -461,49 +489,82 @@ export const LiveVoter: React.FC = () => {
               </div>
             </div>
 
-            {/* Voting Action Section */}
+            {/* Voting Action Section: Aplausómetro Mode */}
             {stageStatus === 'voting_open' ? (
-              <div className="space-y-3">
-                {hasVotedForCurrent ? (
-                  <div className="p-5 rounded-2xl bg-emerald-950/40 border border-emerald-500 text-center space-y-1 shadow-glow-orange animate-pulse">
-                    <CheckCircle2 className="w-8 h-8 text-emerald-400 mx-auto" />
-                    <h3 className="font-display font-black text-lg text-emerald-200">
-                      {currentVoteValue === 'yes' ? '¡Voto Emitido (SÍ)! 🎃' : 'Decidiste Pasar'}
-                    </h3>
-                    <p className="text-[11px] text-gray-300">
-                      Tu voto se registró en tiempo real en la pantalla del auditorio.
+              <div className="space-y-4">
+                {/* Live Aplausómetro Meter Card */}
+                <div className="p-4 rounded-3xl bg-gradient-to-r from-halloween-orange/20 via-amber-500/20 to-purple-600/20 border-2 border-halloween-orange shadow-glow-orange text-center space-y-1">
+                  <span className="text-[11px] font-black uppercase tracking-wider text-halloween-orange flex items-center justify-center gap-1.5 animate-pulse">
+                    <Flame className="w-4 h-4 text-halloween-orange animate-bounce-subtle" />
+                    <span>APLAUSÓMETRO DE VOTOS EN VIVO</span>
+                  </span>
+                  <div className="font-display font-black text-4xl sm:text-5xl text-white tracking-tight animate-vote-burst">
+                    {liveVotes} <span className="text-xl sm:text-2xl text-amber-400 font-sans font-bold">Votos</span>
+                  </div>
+                  {userVotesGiven > 0 ? (
+                    <p className="text-xs text-emerald-400 font-bold">
+                      🎉 ¡Has aportado {userVotesGiven} {userVotesGiven === 1 ? 'voto' : 'votos'}! Sigue tocando para subir el medidor
                     </p>
+                  ) : (
+                    <p className="text-xs text-halloween-lavender">
+                      ¡Toca el botón tantas veces como quieras para apoyar a este disfraz!
+                    </p>
+                  )}
+                </div>
+
+                {/* Big Aplausómetro Tap Button */}
+                {currentVoteValue === 'no' ? (
+                  <div className="p-4 rounded-2xl bg-surface-raised border border-halloween-border text-center space-y-1">
+                    <span className="text-xs font-bold text-gray-400 block">
+                      Has decidido no sumar votos a este concursante.
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => handleVote('yes')}
+                      className="text-xs text-halloween-orange hover:underline font-bold mt-1 cursor-pointer"
+                    >
+                      Cambiar de opinión y votar
+                    </button>
                   </div>
                 ) : (
                   <div className="space-y-2.5">
                     <button
+                      type="button"
                       onClick={() => handleVote('yes')}
-                      disabled={votingLoading}
-                      className="w-full py-4 px-6 rounded-2xl font-display font-black text-lg text-white bg-gradient-to-r from-halloween-orange via-amber-500 to-halloween-orange shadow-glow-orange hover:brightness-110 active:scale-95 transition-all flex items-center justify-center gap-3 animate-bounce-subtle"
+                      className="w-full py-5 px-6 rounded-3xl font-display font-black text-xl sm:text-2xl text-white bg-gradient-to-r from-halloween-orange via-amber-500 to-halloween-orange shadow-[0_0_35px_rgba(255,116,23,0.65)] hover:brightness-110 active:scale-95 active:shadow-[0_0_50px_rgba(255,116,23,0.9)] transition-all flex items-center justify-center gap-3 border-2 border-amber-300/60 select-none cursor-pointer"
                     >
-                      <ThumbsUp className="w-6 h-6" />
-                      <span>{votingLoading ? 'Guardando Voto...' : '👍 Guardar Voto (Votar SÍ)'}</span>
+                      <ThumbsUp className="w-7 h-7 animate-bounce-subtle" />
+                      <span>¡VOTAR! 💥 (+1 VOTO)</span>
                     </button>
 
                     <button
+                      type="button"
                       onClick={() => handleVote('no')}
-                      disabled={votingLoading}
-                      className="w-full py-3 px-4 rounded-xl text-xs sm:text-sm font-semibold text-gray-400 bg-surface-raised border border-halloween-border hover:text-white transition-colors flex items-center justify-center gap-2"
+                      className="w-full py-2.5 px-4 rounded-xl text-xs font-semibold text-gray-400 hover:text-white bg-surface-raised/60 border border-halloween-border transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
                     >
-                      <XCircle className="w-4 h-4 text-gray-500" />
-                      <span>⛔ Pasar al Siguiente (No Votar)</span>
+                      <XCircle className="w-3.5 h-3.5 text-gray-500" />
+                      <span>Pasar / No votar por este</span>
                     </button>
                   </div>
                 )}
               </div>
             ) : stageStatus === 'voting_closed' ? (
-              <div className="p-4 rounded-2xl bg-surface-raised border border-halloween-border text-center space-y-1">
+              <div className="p-5 rounded-3xl bg-surface-raised border border-halloween-border text-center space-y-2">
                 <span className="text-xs font-bold text-red-400 uppercase tracking-wider block">
                   Votación Concluida para este participante
                 </span>
-                <p className="text-xs text-halloween-muted">
-                  El presentador está por llamar al siguiente concursante...
-                </p>
+                <div className="text-2xl font-display font-black text-white">
+                  Total acumulado: <span className="text-emerald-400">{liveVotes} Votos</span>
+                </div>
+                {userVotesGiven > 0 ? (
+                  <p className="text-xs text-halloween-lavender">
+                    ¡Gran energía! Diste <strong>{userVotesGiven} {userVotesGiven === 1 ? 'voto' : 'votos'}</strong> a este participante.
+                  </p>
+                ) : (
+                  <p className="text-xs text-halloween-muted">
+                    El moderador pasará al siguiente concursante en breve...
+                  </p>
+                )}
               </div>
             ) : (
               <div className="p-4 rounded-2xl bg-surface-raised border border-halloween-border text-center space-y-1">
@@ -539,22 +600,29 @@ export const LiveVoter: React.FC = () => {
 
       {/* Bottom Audience Reaction Toolbar (Kahoot / Twitch style) */}
       <footer className="p-3 border-t border-halloween-border/60 bg-[#0A0D1B]/95 backdrop-blur-md sticky bottom-0 z-30">
-        <span className="text-[10px] text-halloween-muted text-center block mb-2 font-semibold">
-          ENVÍA REACCIONES A LA PANTALLA GIGANTE
-        </span>
-        <div className="grid grid-cols-5 gap-2">
+        <div className="flex items-center justify-between mb-2 px-1">
+          <span className="text-[10px] text-halloween-muted font-bold uppercase tracking-wider flex items-center gap-1">
+            <Sparkles className="w-3 h-3 text-halloween-orange" />
+            <span>REACCIONES EN VIVO A LA PANTALLA GIGANTE</span>
+          </span>
+          <span className="text-[10px] text-halloween-orange font-bold">¡Toca un emoji!</span>
+        </div>
+        <div className="grid grid-cols-7 gap-1.5 sm:gap-2">
           {[
             { emoji: '🎃', label: 'Calabaza' },
+            { emoji: '👻', label: 'Fantasma' },
+            { emoji: '💀', label: 'Calavera' },
             { emoji: '🔥', label: 'Fuego' },
-            { emoji: '👏', label: 'Bravo' },
-            { emoji: '💀', label: 'Miedo' },
+            { emoji: '👏', label: 'Aplausos' },
+            { emoji: '😻', label: 'Gatito' },
             { emoji: '⭐', label: 'Top' },
           ].map((item) => (
             <button
               key={item.emoji}
               onClick={() => handleSendReaction(item.emoji)}
-              className="py-2.5 rounded-2xl bg-surface-raised border border-halloween-border hover:border-halloween-orange text-2xl active:scale-90 transition-all flex flex-col items-center justify-center shadow-sm"
+              className="py-3 rounded-2xl bg-surface-raised border border-halloween-border hover:border-halloween-orange text-2xl sm:text-3xl active:scale-75 hover:scale-110 transition-all flex items-center justify-center shadow-sm cursor-pointer hover:bg-halloween-orange/10"
               title={item.label}
+              type="button"
             >
               <span>{item.emoji}</span>
             </button>
