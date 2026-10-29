@@ -75,26 +75,6 @@ export const LiveProjector: React.FC = () => {
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const previousClientsCountRef = useRef<number>(1);
 
-  // Voter state for direct voting on stage view
-  const [voter, setVoter] = useState<{ full_name: string; voter_type: 'student' | 'worker'; institutional_identifier: string } | null>(() => {
-    try {
-      const saved = localStorage.getItem('fmvz_voter');
-      return saved ? JSON.parse(saved) : null;
-    } catch {
-      return null;
-    }
-  });
-  const [hasVotedForCurrent, setHasVotedForCurrent] = useState(false);
-  const [currentVoteValue, setCurrentVoteValue] = useState<'yes' | 'no' | null>(null);
-  const [stageVotesGiven, setStageVotesGiven] = useState(0);
-  const [votingLoading, setVotingLoading] = useState(false);
-  const votedParticipantsRef = useRef<Set<number>>(new Set());
-
-  // Inline quick login if not yet identified
-  const [inlineVoterType, setInlineVoterType] = useState<'student' | 'worker'>('student');
-  const [inlineIdNumber, setInlineIdNumber] = useState('');
-  const [inlineAuthError, setInlineAuthError] = useState<string | null>(null);
-
   const voterUrl = `${window.location.origin}/votar/en-vivo`;
 
   // Toggle Fullscreen
@@ -256,108 +236,6 @@ export const LiveProjector: React.FC = () => {
     };
   }, [state.stage_status, state.voting_seconds_left]);
 
-  // Reset vote state when stage participant changes
-  useEffect(() => {
-    if (state.current_participant?.id) {
-      setStageVotesGiven(0);
-      setCurrentVoteValue(null);
-    }
-  }, [state.current_participant?.id]);
-
-  const handleStageVote = async (value: 'yes' | 'no') => {
-    let activeVoter = voter;
-
-    if (!activeVoter) {
-      const cleanId = inlineIdNumber.replace(/\D/g, '');
-      if (inlineVoterType === 'student' && cleanId.length !== 9) {
-        setInlineAuthError('El número de cuenta de alumno debe tener 9 dígitos.');
-        return;
-      }
-      if (inlineVoterType === 'worker' && (cleanId.length < 6 || cleanId.length > 9)) {
-        setInlineAuthError('El identificador de profesor debe contener entre 6 y 9 dígitos.');
-        return;
-      }
-      setInlineAuthError(null);
-
-      const resolvedName = inlineVoterType === 'student' ? `Alumno (${cleanId})` : `Profesor (${cleanId})`;
-      activeVoter = {
-        full_name: resolvedName,
-        voter_type: inlineVoterType,
-        institutional_identifier: cleanId,
-      };
-      localStorage.setItem('fmvz_voter', JSON.stringify(activeVoter));
-      setVoter(activeVoter);
-    }
-
-    if (!activeVoter || !state.current_participant) return;
-
-    if (value === 'no') {
-      setCurrentVoteValue('no');
-      try {
-        await fetch('/api/live/vote', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            voter_type: activeVoter.voter_type,
-            institutional_identifier: activeVoter.institutional_identifier,
-            full_name: activeVoter.full_name,
-            vote: 'no',
-          }),
-        });
-      } catch {}
-      return;
-    }
-
-    // Aplausómetro: cada toque suma un voto en tiempo real
-    setStageVotesGiven((prev) => prev + 1);
-    setCurrentVoteValue('yes');
-    setState((prev) => ({
-      ...prev,
-      current_votes: {
-        ...prev.current_votes,
-        yes_count: prev.current_votes.yes_count + 1,
-      },
-    }));
-
-    try {
-      confetti({
-        particleCount: 20,
-        spread: 55,
-        origin: { y: 0.65 },
-        colors: ['#10B981', '#FF7417', '#8B5CF6'],
-      });
-    } catch {}
-
-    try {
-      const res = await fetch('/api/live/vote', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          voter_type: activeVoter.voter_type,
-          institutional_identifier: activeVoter.institutional_identifier,
-          full_name: activeVoter.full_name,
-          vote: 'yes',
-        }),
-      });
-
-      if (res.ok) {
-        const data = await res.json();
-        if (data.tally) {
-          setState((prev) => ({
-            ...prev,
-            current_votes: {
-              yes_count: data.tally.yes_count,
-              no_count: data.tally.no_count,
-              total: data.tally.total,
-            },
-          }));
-        }
-      }
-    } catch {
-      // offline silent retry
-    }
-  };
-
   const launchPodiumConfetti = () => {
     try {
       confetti({
@@ -494,7 +372,7 @@ export const LiveProjector: React.FC = () => {
           <div className="flex items-center gap-2 px-3 py-1.5 rounded-2xl bg-surface-raised border border-halloween-border text-xs">
             <Flame className="w-4 h-4 text-halloween-orange" />
             <span className="font-mono font-bold text-halloween-orange">{state.total_cheers}</span>
-            <span className="hidden sm:inline text-halloween-muted">aplausos</span>
+            <span className="hidden sm:inline text-halloween-muted">reacciones</span>
           </div>
 
           <button
@@ -731,112 +609,6 @@ export const LiveProjector: React.FC = () => {
                       </span>
                     </div>
                   </div>
-
-                  {/* Direct Voting Buttons on Stage View */}
-                  {voter ? (
-                    <div className="space-y-3 pt-3 border-t border-halloween-border/70">
-                      <div className="flex items-center justify-between text-xs text-halloween-lavender">
-                        <span className="flex items-center gap-1.5">
-                          <span className="w-2 h-2 rounded-full bg-emerald-400" />
-                          Votando como:{' '}
-                          <strong className="text-white">
-                            {voter.voter_type === 'student' ? '🎓 Alumno' : '👨‍🏫 Profesor'} ({voter.institutional_identifier})
-                          </strong>
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            localStorage.removeItem('fmvz_voter');
-                            setVoter(null);
-                          }}
-                          className="text-[11px] text-halloween-orange hover:underline cursor-pointer"
-                        >
-                          Cambiar cuenta
-                        </button>
-                      </div>
-
-                      <div className="space-y-2">
-                        <button
-                          type="button"
-                          onClick={() => handleStageVote('yes')}
-                          className="w-full py-4 px-6 rounded-2xl font-display font-black text-base sm:text-lg text-white bg-gradient-to-r from-halloween-orange via-amber-500 to-halloween-orange shadow-glow-orange hover:brightness-110 active:scale-95 transition-all flex items-center justify-center gap-2 animate-bounce-subtle cursor-pointer select-none"
-                        >
-                          <ThumbsUp className="w-6 h-6" />
-                          <span>¡VOTAR POR ESTE DISFRAZ! 💥 (+1 VOTO)</span>
-                        </button>
-
-                        {stageVotesGiven > 0 && (
-                          <p className="text-xs text-emerald-400 font-bold text-center animate-fade-in">
-                            🎉 Has sumado {stageVotesGiven} {stageVotesGiven === 1 ? 'voto' : 'votos'} a este concursante. ¡Sigue tocando!
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="space-y-3 pt-3 border-t border-halloween-border/70">
-                      <div className="text-xs text-halloween-lavender font-semibold">
-                        Identifícate con tu cuenta UNAM para votar en esta pantalla:
-                      </div>
-
-                      {inlineAuthError && (
-                        <div className="p-2.5 rounded-xl bg-red-900/40 border border-red-500/50 text-red-300 text-xs">
-                          {inlineAuthError}
-                        </div>
-                      )}
-
-                      {/* Alumno vs Profesor selection */}
-                      <div className="grid grid-cols-2 gap-2">
-                        <button
-                          type="button"
-                          onClick={() => setInlineVoterType('student')}
-                          className={`py-2 px-3 rounded-xl text-xs font-bold border transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-                            inlineVoterType === 'student'
-                              ? 'bg-halloween-orange text-black border-halloween-orange shadow-glow-orange'
-                              : 'bg-surface text-gray-400 border-halloween-border hover:text-white'
-                          }`}
-                        >
-                          <span>🎓 Alumno (9 dígitos)</span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setInlineVoterType('worker')}
-                          className={`py-2 px-3 rounded-xl text-xs font-bold border transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-                            inlineVoterType === 'worker'
-                              ? 'bg-halloween-orange text-black border-halloween-orange shadow-glow-orange'
-                              : 'bg-surface text-gray-400 border-halloween-border hover:text-white'
-                          }`}
-                        >
-                          <span>👨‍🏫 Profesor / Personal</span>
-                        </button>
-                      </div>
-
-                      {/* Account number input */}
-                      <div>
-                        <input
-                          type="text"
-                          inputMode="numeric"
-                          maxLength={9}
-                          value={inlineIdNumber}
-                          onChange={(e) => setInlineIdNumber(e.target.value.replace(/\D/g, ''))}
-                          placeholder={inlineVoterType === 'student' ? 'Ingresa tu número de cuenta (9 dígitos)' : 'Ingresa tu número de trabajador'}
-                          className="w-full px-3.5 py-2.5 rounded-xl bg-black/50 border border-halloween-border text-white placeholder-gray-500 font-mono text-sm focus:outline-none focus:border-halloween-orange focus:ring-1 focus:ring-halloween-orange"
-                        />
-                      </div>
-
-                      {/* Action buttons */}
-                      <div className="pt-1">
-                        <button
-                          type="button"
-                          onClick={() => handleStageVote('yes')}
-                          disabled={!inlineIdNumber}
-                          className="w-full py-3.5 px-4 rounded-xl font-display font-black text-sm text-white bg-gradient-to-r from-halloween-orange via-amber-500 to-halloween-orange shadow-glow-orange hover:brightness-110 active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          <ThumbsUp className="w-5 h-5" />
-                          <span>¡VOTAR POR ESTE DISFRAZ! 💥 (+1 VOTO)</span>
-                        </button>
-                      </div>
-                    </div>
-                  )}
                 </div>
               ) : state.stage_status === 'voting_closed' ? (
                 <div className="glass-panel p-6 sm:p-8 rounded-3xl border border-halloween-purple/50 shadow-glow-purple space-y-4">
