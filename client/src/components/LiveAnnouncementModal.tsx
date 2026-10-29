@@ -90,13 +90,17 @@ export const LiveAnnouncementModal: React.FC = () => {
     }
   }, [isLiveActive, isDismissed, isAlreadyOnLivePage]);
 
+  const isMobile =
+    typeof window !== 'undefined' &&
+    (window.innerWidth < 768 || /iPhone|iPad|iPod|Android/i.test(navigator.userAgent));
+
   const handleDismiss = () => {
     setIsOpen(false);
     setIsDismissed(true);
     sessionStorage.setItem('fmvz_live_popup_dismissed', 'true');
   };
 
-  const handleJoin = (targetRoute: '/votar/en-vivo' | '/en-vivo') => {
+  const handleJoin = (targetRoute: string) => {
     setIsJoining(true);
 
     // Launch celebratory join confetti
@@ -114,6 +118,10 @@ export const LiveAnnouncementModal: React.FC = () => {
       setIsJoining(false);
       navigate(targetRoute);
     }, 450);
+  };
+
+  const handlePrimaryJoin = () => {
+    handleJoin(isMobile ? '/votar/en-vivo' : '/en-vivo');
   };
 
   if (!isLiveActive || isAlreadyOnLivePage) {
@@ -226,29 +234,43 @@ export const LiveAnnouncementModal: React.FC = () => {
             {/* Action Buttons with Join Animation */}
             <div className="space-y-3 relative z-10">
               <button
-                onClick={() => handleJoin('/en-vivo')}
+                onClick={handlePrimaryJoin}
                 disabled={isJoining}
-                className="w-full py-4 px-6 rounded-2xl font-display font-black text-base text-white bg-gradient-to-r from-halloween-orange via-amber-500 to-halloween-orange hover:brightness-110 shadow-[0_0_30px_rgba(255,116,23,0.6)] active:scale-95 transition-all flex items-center justify-center gap-3 border border-amber-300/40 animate-bounce-subtle"
+                className="w-full py-4 px-6 rounded-2xl font-display font-black text-base text-white bg-gradient-to-r from-halloween-orange via-amber-500 to-halloween-orange hover:brightness-110 shadow-[0_0_30px_rgba(255,116,23,0.6)] active:scale-95 transition-all flex items-center justify-center gap-3 border border-amber-300/40 animate-bounce-subtle cursor-pointer"
               >
-                <Tv className="w-5 h-5" />
+                {isMobile ? <Smartphone className="w-5 h-5" /> : <Tv className="w-5 h-5" />}
                 <span>
-                  {isJoining ? '¡Entrando al escenario en vivo...!' : '⭐ ¡UNIRME AL ESCENARIO EN VIVO!'}
+                  {isJoining
+                    ? '¡Entrando a votar...!'
+                    : isMobile
+                    ? '📱 ¡ENTRAR A VOTAR EN VIVO!'
+                    : '⭐ ¡UNIRME AL ESCENARIO EN VIVO!'}
                 </span>
                 <ArrowRight className="w-5 h-5" />
               </button>
 
               <div className="grid grid-cols-2 gap-2.5">
-                <button
-                  onClick={() => handleJoin('/votar/en-vivo')}
-                  className="py-2.5 px-3 rounded-xl text-xs font-semibold text-gray-300 hover:text-white bg-surface-raised border border-halloween-border hover:border-halloween-orange transition-colors flex items-center justify-center gap-1.5"
-                >
-                  <Smartphone className="w-4 h-4 text-halloween-orange" />
-                  <span>Control de Celular</span>
-                </button>
+                {isMobile ? (
+                  <button
+                    onClick={() => handleJoin('/en-vivo?view=projector')}
+                    className="py-2.5 px-3 rounded-xl text-xs font-semibold text-gray-300 hover:text-white bg-surface-raised border border-halloween-border hover:border-halloween-orange transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                  >
+                    <Tv className="w-4 h-4 text-halloween-orange" />
+                    <span>Ver Proyector Auditorio</span>
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => handleJoin('/votar/en-vivo')}
+                    className="py-2.5 px-3 rounded-xl text-xs font-semibold text-gray-300 hover:text-white bg-surface-raised border border-halloween-border hover:border-halloween-orange transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                  >
+                    <Smartphone className="w-4 h-4 text-halloween-orange" />
+                    <span>Control de Celular</span>
+                  </button>
+                )}
 
                 <button
                   onClick={handleDismiss}
-                  className="py-2.5 px-3 rounded-xl text-xs font-medium text-halloween-muted hover:text-white bg-surface-raised/60 border border-halloween-border transition-colors text-center"
+                  className="py-2.5 px-3 rounded-xl text-xs font-medium text-halloween-muted hover:text-white bg-surface-raised/60 border border-halloween-border transition-colors text-center cursor-pointer"
                 >
                   Continuar navegando
                 </button>
@@ -273,12 +295,12 @@ export const LiveAnnouncementModal: React.FC = () => {
           className="fixed bottom-20 md:bottom-6 right-4 z-40 animate-bounce-subtle"
         >
           <button
-            onClick={() => handleJoin('/en-vivo')}
-            className="group flex items-center gap-2.5 px-4 py-2.5 rounded-full bg-gradient-to-r from-red-600 via-orange-500 to-amber-500 text-white font-bold text-xs shadow-[0_0_20px_rgba(239,68,68,0.6)] hover:brightness-110 active:scale-95 transition-all border border-amber-300/40"
+            onClick={handlePrimaryJoin}
+            className="group flex items-center gap-2.5 px-4 py-2.5 rounded-full bg-gradient-to-r from-red-600 via-orange-500 to-amber-500 text-white font-bold text-xs shadow-[0_0_20px_rgba(239,68,68,0.6)] hover:brightness-110 active:scale-95 transition-all border border-amber-300/40 cursor-pointer"
           >
             <span className="w-2 h-2 rounded-full bg-white animate-ping" />
             <Radio className="w-3.5 h-3.5" />
-            <span>EN VIVO: Entrar al Escenario</span>
+            <span>{isMobile ? 'EN VIVO: Entrar a Votar' : 'EN VIVO: Entrar al Escenario'}</span>
             <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
           </button>
         </aside>

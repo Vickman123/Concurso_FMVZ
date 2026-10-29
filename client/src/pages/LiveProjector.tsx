@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import confetti from 'canvas-confetti';
 import {
   Sparkles,
@@ -74,6 +75,21 @@ export const LiveProjector: React.FC = () => {
   const [joinNotification, setJoinNotification] = useState<{ id: string; count: number } | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const previousClientsCountRef = useRef<number>(1);
+
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const forceProjector = searchParams.get('view') === 'projector';
+
+  // Smart mobile routing: if a mobile user visits /en-vivo (the auditorium projector screen),
+  // automatically redirect them to /votar/en-vivo so they see the voting and login interface.
+  useEffect(() => {
+    const isMobile =
+      typeof window !== 'undefined' &&
+      (window.innerWidth < 768 || /iPhone|iPad|iPod|Android/i.test(navigator.userAgent));
+    if (isMobile && !forceProjector) {
+      navigate('/votar/en-vivo', { replace: true });
+    }
+  }, [forceProjector, navigate]);
 
   const voterUrl = `${window.location.origin}/votar/en-vivo`;
 

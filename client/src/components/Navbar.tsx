@@ -137,12 +137,12 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenQr }) => {
           {isLiveActive && (
             <div className="pt-2">
               <Link
-                to="/en-vivo"
+                to="/votar/en-vivo"
                 onClick={() => setMobileMenuOpen(false)}
                 className="w-full flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-white bg-gradient-to-r from-red-600 via-orange-500 to-amber-500 shadow-[0_0_20px_rgba(239,68,68,0.5)] animate-pulse"
               >
                 <Radio className="w-4 h-4" />
-                <span>Votar en Vivo (Kahoot)</span>
+                <span>Votar en Vivo desde tu Celular</span>
               </Link>
             </div>
           )}

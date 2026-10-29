@@ -11,7 +11,7 @@ export const BottomNav: React.FC = () => {
     { label: 'Inicio', path: '/', icon: Home },
     { label: 'Galería', path: '/participantes', icon: Users },
     ...(isLiveActive
-      ? [{ label: 'En Vivo', path: '/en-vivo', icon: Radio, primary: true }]
+      ? [{ label: 'Votar en Vivo', path: '/votar/en-vivo', icon: Radio, primary: true }]
       : [{ label: 'Registrar', path: '/registrar', icon: PlusCircle, primary: true }]),
     { label: 'Ayuda', path: '/preguntas-frecuentes', icon: HelpCircle },
   ];
