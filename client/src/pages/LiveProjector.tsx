@@ -615,22 +615,22 @@ export const LiveProjector: React.FC = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <span className="text-xs text-red-400 font-bold uppercase tracking-wider block">
-                        Votación Concluida para este participante
+                        Votación Concluida
                       </span>
-                      <strong className="text-2xl text-white font-display">
-                        Votos Guardados en la Urna Digital
+                      <strong className="text-2xl sm:text-3xl text-white font-display">
+                        Se finalizó el tiempo de votar
                       </strong>
                     </div>
-                    <div className="px-4 py-2 rounded-2xl bg-halloween-purple/20 border border-halloween-purple/40 text-halloween-lavender font-mono font-bold text-sm">
-                      🔒 Votos Secretos
+                    <div className="px-4 py-2 rounded-2xl bg-emerald-500/20 border border-emerald-400/50 text-emerald-300 font-mono font-bold text-sm flex items-center gap-2">
+                      <span>🔒 Votos Registrados</span>
                     </div>
                   </div>
 
-                  <p className="text-xs text-gray-300">
-                    Los votos han sido guardados con trazabilidad institucional. Los resultados oficiales se revelarán durante la ceremonia de premiación.
+                  <p className="text-sm text-gray-200">
+                    Se han juntado los votos de la comunidad universitaria con éxito. Los resultados oficiales se mantendrán en secreto hasta la ceremonia de premiación.
                   </p>
-                  <p className="text-[11px] text-halloween-muted">
-                    El moderador llamará al siguiente concursante en breve...
+                  <p className="text-xs text-halloween-muted">
+                    El moderador pasará al siguiente participante en unos momentos...
                   </p>
                 </div>
               ) : (

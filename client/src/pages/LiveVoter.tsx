@@ -550,7 +550,7 @@ export const LiveVoter: React.FC = () => {
             ) : stageStatus === 'voting_closed' ? (
               <div className="p-5 rounded-3xl bg-surface-raised border border-halloween-border text-center space-y-2">
                 <span className="text-xs font-bold text-red-400 uppercase tracking-wider block">
-                  🔒 Votación Concluida para este participante
+                  🔒 Se finalizó el tiempo de votar
                 </span>
                 <p className="text-xs text-gray-300 leading-relaxed">
                   {currentVoteValue === 'yes' ? (
@@ -563,13 +563,13 @@ export const LiveVoter: React.FC = () => {
                     </span>
                   ) : (
                     <span className="text-halloween-muted block">
-                      No se emitió voto durante el tiempo reglamentario.
+                      Se han juntado los votos de la comunidad universitaria.
                     </span>
                   )}
                   Los resultados se mantendrán en secreto hasta la ceremonia de premiación.
                 </p>
                 <p className="text-[11px] text-halloween-muted pt-1">
-                  El presentador llamará al siguiente concursante en breve...
+                  El moderador pasará al siguiente participante en unos momentos...
                 </p>
               </div>
             ) : (
