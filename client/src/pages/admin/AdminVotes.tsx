@@ -223,57 +223,59 @@ export const AdminVotes: React.FC = () => {
 
       {/* Summary Stat Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
-        <div className="p-4 rounded-2xl glass-panel border border-halloween-border">
-          <span className="text-[11px] text-gray-400 uppercase tracking-wider font-bold block">
-            Total de Votos
-          </span>
-          <span className="font-mono font-black text-2xl sm:text-3xl text-white">
-            {votes.length}
-          </span>
-          <span className="text-[10px] text-halloween-muted block mt-0.5">
-            Registrados en el sistema
-          </span>
-        </div>
-
-        <div className="p-4 rounded-2xl glass-panel border border-purple-500/40 bg-purple-950/20">
-          <span className="text-[11px] text-purple-300 uppercase tracking-wider font-bold block flex items-center gap-1">
-            <Radio className="w-3 h-3 text-red-400 animate-pulse" />
-            En Vivo
-          </span>
-          <span className="font-mono font-black text-2xl sm:text-3xl text-purple-200">
-            {votes.filter((v) => v.vote_source === 'live').length}
-          </span>
-          <span className="text-[10px] text-purple-400/80 block mt-0.5">
-            Emitidos en el auditorio
-          </span>
-        </div>
-
-        <div className="p-4 rounded-2xl glass-panel border border-emerald-500/40 bg-emerald-950/20">
+        {/* Votos Válidos (Puntos reales de los concursantes) */}
+        <div className="p-4 rounded-2xl glass-panel border border-emerald-500/50 bg-emerald-950/20">
           <span className="text-[11px] text-emerald-300 uppercase tracking-wider font-bold block flex items-center gap-1">
-            <CheckCircle2 className="w-3 h-3 text-emerald-400" />
-            Votos a Favor (SÍ)
+            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+            Votos Válidos (Puntos)
           </span>
-          <span className="font-mono font-black text-2xl sm:text-3xl text-emerald-200">
+          <span className="font-mono font-black text-2xl sm:text-3xl text-emerald-300">
             {votes.filter((v) => v.vote_value === 'yes').length}
           </span>
           <span className="text-[10px] text-emerald-400/80 block mt-0.5">
-            Calificaciones positivas
+            Suman al podio ({votes.filter((v) => v.vote_value === 'yes' && v.vote_source === 'live').length} en vivo + {votes.filter((v) => v.vote_value === 'yes' && v.vote_source === 'web').length} web)
           </span>
         </div>
 
+        {/* Votos Válidos en Vivo */}
+        <div className="p-4 rounded-2xl glass-panel border border-purple-500/40 bg-purple-950/20">
+          <span className="text-[11px] text-purple-300 uppercase tracking-wider font-bold block flex items-center gap-1">
+            <Radio className="w-3.5 h-3.5 text-red-400 animate-pulse" />
+            En Vivo (Votó SÍ)
+          </span>
+          <span className="font-mono font-black text-2xl sm:text-3xl text-purple-200">
+            {votes.filter((v) => v.vote_source === 'live' && v.vote_value === 'yes').length}
+          </span>
+          <span className="text-[10px] text-purple-400/80 block mt-0.5">
+            Votos a favor en auditorio
+          </span>
+        </div>
+
+        {/* Pasaron / Abstenciones */}
+        <div className="p-4 rounded-2xl glass-panel border border-halloween-border bg-surface-card">
+          <span className="text-[11px] text-gray-400 uppercase tracking-wider font-bold block flex items-center gap-1">
+            <span className="text-xs">⛔</span>
+            Pasaron (Abstenciones)
+          </span>
+          <span className="font-mono font-black text-2xl sm:text-3xl text-gray-300">
+            {votes.filter((v) => v.vote_value === 'no').length}
+          </span>
+          <span className="text-[10px] text-halloween-muted block mt-0.5">
+            Decidieron no dar voto
+          </span>
+        </div>
+
+        {/* Total Registros en Bitácora */}
         <div className="p-4 rounded-2xl glass-panel border border-amber-500/40 bg-amber-950/20">
           <span className="text-[11px] text-amber-300 uppercase tracking-wider font-bold block flex items-center gap-1">
-            <Users className="w-3 h-3 text-amber-400" />
-            Comunidad FMVZ
+            <Users className="w-3.5 h-3.5 text-amber-400" />
+            Total Registros Bitácora
           </span>
-          <div className="flex items-center gap-2 mt-1">
-            <span className="text-xs text-amber-200 font-mono font-bold">
-              🎓 {votes.filter((v) => v.voter_type === 'student').length} Alumnos
-            </span>
-            <span className="text-gray-500">|</span>
-            <span className="text-xs text-amber-200 font-mono font-bold">
-              👨‍🏫 {votes.filter((v) => v.voter_type === 'worker').length} Profesores
-            </span>
+          <span className="font-mono font-black text-2xl sm:text-3xl text-amber-200">
+            {votes.length}
+          </span>
+          <div className="text-[10px] text-amber-300/80 mt-0.5">
+            🎓 {votes.filter((v) => v.voter_type === 'student').length} Alumnos | 👨‍🏫 {votes.filter((v) => v.voter_type === 'worker').length} Profes
           </div>
         </div>
       </div>
@@ -305,10 +307,10 @@ export const AdminVotes: React.FC = () => {
             <Filter className="w-3 h-3" /> Filtrar:
           </span>
           {[
-            { id: 'all', label: `Todos (${votes.length})` },
+            { id: 'all', label: `Todos los Registros (${votes.length})` },
+            { id: 'yes', label: `👍 Votos Válidos (SÍ) (${votes.filter((v) => v.vote_value === 'yes').length})` },
             { id: 'live', label: `⚡ En Vivo (${votes.filter((v) => v.vote_source === 'live').length})` },
-            { id: 'yes', label: `👍 Votó SÍ (${votes.filter((v) => v.vote_value === 'yes').length})` },
-            { id: 'no', label: `⛔ Pasó (${votes.filter((v) => v.vote_value === 'no').length})` },
+            { id: 'no', label: `⛔ Pasaron / Abstención (${votes.filter((v) => v.vote_value === 'no').length})` },
             { id: 'student', label: `🎓 Alumnos (${votes.filter((v) => v.voter_type === 'student').length})` },
             { id: 'worker', label: `👨‍🏫 Profesores (${votes.filter((v) => v.voter_type === 'worker').length})` },
           ].map((pill) => (
