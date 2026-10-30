@@ -49,21 +49,21 @@ async function prepareProduction() {
     console.log('👥 Generando cuentas de administrador institucionales...');
     const adminsToCreate = [
       {
-        name: 'Comité Directivo FMVZ',
-        email: 'director.fmvz@unam.mx',
-        password: 'Fmvz2026*Directivo!',
+        name: 'Administrador Concurso FMVZ',
+        email: 'admin@concurso.fmvz',
+        password: 'FmvzHalloween2026!',
         role: 'admin',
       },
       {
-        name: 'Coordinación Pasarela en Vivo',
-        email: 'pasarela.fmvz@unam.mx',
-        password: 'Fmvz2026*PasarelaLive!',
+        name: 'Staff y Operador de Pasarela',
+        email: 'staff@concurso.fmvz',
+        password: 'FmvzStaff2026!',
         role: 'admin',
       },
       {
-        name: 'Jurado Calificador y Mesa de Control',
-        email: 'jurado.fmvz@unam.mx',
-        password: 'Fmvz2026*JuradoOficial!',
+        name: 'Mesa de Jurado FMVZ',
+        email: 'jurado@concurso.fmvz',
+        password: 'FmvzJurado2026!',
         role: 'admin',
       },
       {
@@ -89,7 +89,7 @@ async function prepareProduction() {
     }
 
     // 5. Asignar ID 1 de admins para el log inicial
-    const firstAdminRes = await client.query('SELECT id FROM admins WHERE email = $1', ['director.fmvz@unam.mx']);
+    const firstAdminRes = await client.query('SELECT id FROM admins WHERE email = $1', ['admin@concurso.fmvz']);
     const adminId = firstAdminRes.rows[0]?.id || 1;
 
     // 6. Registro inicial en la bitácora limpia de auditoría

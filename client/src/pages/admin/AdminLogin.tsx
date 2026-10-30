@@ -69,7 +69,7 @@ export const AdminLogin: React.FC = () => {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="ejemplo@fmvz.unam.mx"
+                  placeholder="admin@concurso.fmvz"
                   autoComplete="off"
                   className="w-full pl-10 pr-4 py-3 rounded-xl bg-surface-raised border border-halloween-border text-xs sm:text-sm text-white placeholder-halloween-muted focus:outline-none focus:border-halloween-purple"
                 />
