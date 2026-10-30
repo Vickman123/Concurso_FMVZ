@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Users, Radio, PlusCircle, HelpCircle } from 'lucide-react';
+import { Home, Users, Radio, PlusCircle, HelpCircle, ClipboardCheck } from 'lucide-react';
 import { useContest } from '../context/ContestContext';
 
 export const BottomNav: React.FC = () => {
@@ -13,6 +13,7 @@ export const BottomNav: React.FC = () => {
     ...(isLiveActive
       ? [{ label: 'Votar en Vivo', path: '/votar/en-vivo', icon: Radio, primary: true }]
       : [{ label: 'Registrar', path: '/registrar', icon: PlusCircle, primary: true }]),
+    { label: 'Mi Registro', path: '/registro/estado', icon: ClipboardCheck },
     { label: 'Ayuda', path: '/preguntas-frecuentes', icon: HelpCircle },
   ];
 

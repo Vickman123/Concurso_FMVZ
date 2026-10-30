@@ -18,6 +18,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenQr }) => {
     { label: 'Participantes', path: '/participantes' },
     ...(isLiveActive ? [{ label: 'Escenario en Vivo', path: '/en-vivo' }] : []),
     { label: 'Registrar mi disfraz', path: '/registrar' },
+    { label: 'Consultar mi registro', path: '/registro/estado' },
     { label: 'Preguntas frecuentes', path: '/preguntas-frecuentes' },
   ];
 
