@@ -35,9 +35,9 @@ export const QrCodeModal: React.FC<QrCodeModalProps> = ({ isOpen, onClose }) => 
 
         {/* Custom QR Code with centered Pumpkin Logo */}
         <CustomQrWithLogo
-          size={240}
+          size={260}
           showLogo={true}
-          logoSrc="/logos/concurso-fmvz-square.jpg"
+          logoSrc="/logos/qr-emblem-clean.png"
           showActions={true}
         />
       </div>

@@ -206,7 +206,7 @@ export const AdminSettings: React.FC = () => {
           <CustomQrWithLogo
             size={260}
             showLogo={true}
-            logoSrc="/logos/concurso-fmvz-square.jpg"
+            logoSrc="/logos/qr-emblem-clean.png"
             showActions={true}
           />
         </div>

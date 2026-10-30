@@ -15,7 +15,7 @@ export const CustomQrWithLogo: React.FC<CustomQrWithLogoProps> = ({
   url,
   size = 320,
   showLogo = true,
-  logoSrc = '/logos/concurso-fmvz-square.jpg',
+  logoSrc = '/logos/qr-emblem-clean.png',
   showActions = true,
   className = '',
 }) => {
@@ -59,30 +59,37 @@ export const CustomQrWithLogo: React.FC<CustomQrWithLogoProps> = ({
             if (isCancelled) return;
 
             const center = size / 2;
-            const badgeRadius = size * 0.16;
+            const badgeRadius = size * 0.165;
 
             // Save context
             ctx.save();
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = 'high';
 
-            // Draw white background circle for maximum contrast & scannability
+            // 1. Draw outer white quiet buffer so QR data modules do not touch the badge
             ctx.beginPath();
             ctx.arc(center, center, badgeRadius + 4, 0, Math.PI * 2);
             ctx.fillStyle = '#FFFFFF';
             ctx.shadowColor = 'rgba(0, 0, 0, 0.25)';
-            ctx.shadowBlur = 8;
+            ctx.shadowBlur = 6;
             ctx.fill();
 
-            // Draw orange/violet ring
+            // 2. Draw orange ring
             ctx.beginPath();
             ctx.arc(center, center, badgeRadius, 0, Math.PI * 2);
-            ctx.fillStyle = '#0F1222';
+            ctx.fillStyle = '#0A0D1B';
             ctx.fill();
             ctx.lineWidth = 3;
             ctx.strokeStyle = '#FF7417';
             ctx.stroke();
 
-            // Draw pumpkin icon in center
-            const iconSize = badgeRadius * 1.4;
+            // 3. Clip strictly to the circular badge so no square corners stick out
+            ctx.beginPath();
+            ctx.arc(center, center, badgeRadius - 1.5, 0, Math.PI * 2);
+            ctx.clip();
+
+            // 4. Draw high-res emblem centered
+            const iconSize = (badgeRadius - 1.5) * 2;
             ctx.drawImage(
               logoImg,
               center - iconSize / 2,
