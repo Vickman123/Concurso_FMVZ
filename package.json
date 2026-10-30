@@ -15,6 +15,7 @@
     "start": "node server/dist/index.js",
     "seed": "npm run seed --workspace=server",
     "test": "npm run test --workspace=server",
+    "backup": "node scripts/backup_production.js",
     "load-test": "node scripts/load-test.mjs"
   },
   "devDependencies": {

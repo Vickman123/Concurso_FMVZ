@@ -8,5 +8,6 @@ server/.env.*
 !server/.env.example
 data/postgres_db
 server/data/postgres_db
+backups/
 *.log
 .DS_Store

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Sliders, QrCode, Download, Save, CheckCircle2, AlertTriangle, Sparkles } from 'lucide-react';
+import { Sliders, QrCode, Download, Save, CheckCircle2, AlertTriangle, Sparkles, ShieldCheck, Database } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { CustomQrWithLogo } from '../../components/CustomQrWithLogo';
 
@@ -13,6 +13,30 @@ export const AdminSettings: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [savedSuccess, setSavedSuccess] = useState(false);
   const [qrDataUrl, setQrDataUrl] = useState<string>('');
+  const [downloadingBackup, setDownloadingBackup] = useState(false);
+
+  const handleDownloadBackup = async () => {
+    setDownloadingBackup(true);
+    try {
+      const res = await fetch('/api/admin/backup/export', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error('Error al generar respaldo en el servidor');
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `respaldo_fmvz_halloween_${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    } catch (e: any) {
+      alert('Error al descargar el respaldo: ' + e.message);
+    } finally {
+      setDownloadingBackup(false);
+    }
+  };
 
   const fetchSettings = async () => {
     setLoading(true);
@@ -185,6 +209,34 @@ export const AdminSettings: React.FC = () => {
             logoSrc="/logos/concurso-fmvz-square.jpg"
             showActions={true}
           />
+        </div>
+      </div>
+
+      {/* Resguardo y Copia de Seguridad */}
+      <div className="glass-panel rounded-3xl p-6 sm:p-8 border border-emerald-500/40 bg-emerald-950/15 space-y-4 shadow-lg">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-5">
+          <div className="space-y-1.5">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-400/40 text-emerald-300 text-xs font-bold uppercase tracking-wider">
+              <ShieldCheck className="w-3.5 h-3.5" />
+              <span>Resguardo Oficial y Copia de Seguridad</span>
+            </div>
+            <h2 className="font-display font-black text-xl text-white">
+              Copia de Seguridad Integral (Fotografías + Datos + Votos)
+            </h2>
+            <p className="text-xs text-halloween-lavender max-w-2xl leading-relaxed">
+              Descarga un archivo snapshot en formato JSON con la totalidad de participantes inscritos, sus fotografías originales en alta definición, las cédulas de votación, los folios de auditoría y los ajustes del certamen. Guárdalo directamente en Google Drive o en una memoria USB institucional.
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleDownloadBackup}
+            disabled={downloadingBackup}
+            className="px-6 py-4 rounded-2xl font-display font-bold text-sm text-white bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 hover:brightness-110 shadow-lg transition-all flex items-center justify-center gap-2 border border-emerald-400/50 disabled:opacity-50 whitespace-nowrap transform hover:-translate-y-0.5 active:scale-95"
+          >
+            <Download className="w-5 h-5" />
+            <span>{downloadingBackup ? 'Generando Respaldo...' : 'Descargar Respaldo Completo'}</span>
+          </button>
         </div>
       </div>
     </div>

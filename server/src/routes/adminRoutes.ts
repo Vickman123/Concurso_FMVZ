@@ -18,6 +18,7 @@ import {
   getAuditLogs,
   generateQrCode,
   updateParticipantPhoto,
+  exportSystemBackup,
 } from '../controllers/adminController';
 import { uploadCostumePhoto, validateImageMagicBytes } from '../middleware/upload';
 import { authenticate, requireAdmin } from '../middleware/auth';
@@ -49,5 +50,6 @@ router.get('/participants/export-csv', requireAdmin, exportParticipantsCsv);
 router.patch('/settings', requireAdmin, updateContestSettings);
 router.patch('/prizes/:id', requireAdmin, updatePrizeCategory);
 router.get('/audit-logs', requireAdmin, getAuditLogs);
+router.get('/backup/export', requireAdmin, exportSystemBackup);
 
 export default router;

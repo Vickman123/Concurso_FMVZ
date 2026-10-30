@@ -711,3 +711,41 @@ export async function updateParticipantPhoto(req: Request, res: Response): Promi
     res.status(500).json({ error: 'Error al actualizar fotografía', details: err.message });
   }
 }
+
+export async function exportSystemBackup(req: Request, res: Response): Promise<void> {
+  try {
+    const db = await getDb();
+    const participantsRes = await db.query('SELECT * FROM participants ORDER BY contest_number ASC');
+    const votesRes = await db.query('SELECT * FROM votes ORDER BY created_at ASC');
+    const liveVotesRes = await db.query('SELECT * FROM live_votes ORDER BY created_at ASC');
+    const votersRes = await db.query('SELECT * FROM voters ORDER BY created_at ASC');
+    const auditRes = await db.query('SELECT * FROM audit_logs ORDER BY timestamp ASC');
+    const settingsRes = await db.query('SELECT * FROM contest_settings WHERE id = 1');
+
+    const backupPayload = {
+      exported_at: new Date().toISOString(),
+      institution: 'Facultad de Medicina Veterinaria y Zootecnia (FMVZ - UNAM)',
+      event: 'Segundo Concurso de Disfraces de Halloween 2026',
+      metadata: {
+        total_participants: participantsRes.rowCount,
+        total_votes: votesRes.rowCount,
+        total_live_votes: liveVotesRes.rowCount,
+        total_voters: votersRes.rowCount,
+        total_audit_logs: auditRes.rowCount,
+      },
+      contest_settings: settingsRes.rows[0] || {},
+      participants: participantsRes.rows,
+      votes: votesRes.rows,
+      live_votes: liveVotesRes.rows,
+      voters: votersRes.rows,
+      audit_logs: auditRes.rows,
+    };
+
+    const dateStr = new Date().toISOString().split('T')[0];
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="respaldo_fmvz_halloween_${dateStr}.json"`);
+    res.send(JSON.stringify(backupPayload, null, 2));
+  } catch (err: any) {
+    res.status(500).json({ error: 'Error al exportar respaldo del sistema', details: err.message });
+  }
+}
