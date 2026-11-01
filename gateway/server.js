@@ -36,8 +36,47 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const OVH_BACKEND_URL = (process.env.OVH_BACKEND_URL || 'https://135-148-166-89.sslip.io').trim().replace(/\/+$/, '');
 const GATEWAY_SECRET = (process.env.GATEWAY_SECRET || '').trim();
-const rawClientPath = process.env.CLIENT_DIST_PATH || '../client/dist';
-const CLIENT_DIST_PATH = path.isAbsolute(rawClientPath) ? rawClientPath : path.resolve(__dirname, rawClientPath);
+// Localizar el directorio compilado de React (client/dist) de forma infalible
+function resolveClientDist() {
+  const candidates = [
+    process.env.CLIENT_DIST_PATH ? path.resolve(process.cwd(), process.env.CLIENT_DIST_PATH) : null,
+    process.env.CLIENT_DIST_PATH ? path.resolve(__dirname, process.env.CLIENT_DIST_PATH) : null,
+    process.env.CLIENT_DIST_PATH && path.isAbsolute(process.env.CLIENT_DIST_PATH) ? process.env.CLIENT_DIST_PATH : null,
+    path.resolve(process.cwd(), 'client/dist'),
+    path.resolve(__dirname, '../client/dist'),
+    path.resolve(__dirname, 'client/dist'),
+  ].filter(Boolean);
+
+  for (const c of candidates) {
+    if (fs.existsSync(c) && fs.existsSync(path.join(c, 'index.html'))) {
+      return c;
+    }
+  }
+
+  // Si no se encuentra con index.html, retornar la primera candidata existente o la ruta canónica en la raíz
+  for (const c of candidates) {
+    if (fs.existsSync(c)) return c;
+  }
+
+  return path.resolve(process.cwd(), 'client/dist');
+}
+
+let CLIENT_DIST_PATH = resolveClientDist();
+
+// Auto-compilación de emergencia en tiempo de arranque si index.html no existe
+if (!fs.existsSync(path.join(CLIENT_DIST_PATH, 'index.html'))) {
+  console.log('[Gateway] index.html no encontrado al arrancar. Compilando frontend React...');
+  try {
+    const { execSync } = require('child_process');
+    const rootDir = fs.existsSync(path.resolve(process.cwd(), 'client')) ? process.cwd() : path.resolve(__dirname, '..');
+    execSync('npm run build --workspace=client', { stdio: 'inherit', cwd: rootDir });
+    CLIENT_DIST_PATH = resolveClientDist();
+    console.log(`[Gateway] Frontend compilado con éxito en: ${CLIENT_DIST_PATH}`);
+  } catch (buildErr) {
+    console.error('[Gateway] No fue posible compilar client en tiempo de arranque:', buildErr.message);
+  }
+}
+
 const MAX_PAYLOAD_BYTES = 15 * 1024 * 1024; // 15 Megabytes
 
 console.log('=======================================================');
