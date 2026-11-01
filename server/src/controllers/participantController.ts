@@ -114,60 +114,83 @@ export async function registerParticipant(req: Request, res: Response): Promise<
 
     const db = await getDb();
 
-    // Run registration transactionally
-    const result = await db.transaction(async (client) => {
-      // 1. Check settings & capacity limit
-      const settingsRes = await client.query('SELECT registration_limit FROM contest_settings WHERE id = 1');
-      const limit = Number(settingsRes.rows[0]?.registration_limit || 100);
+    // Run registration transactionally with concurrency lock & auto-retry
+    let result: any = null;
+    let attempts = 0;
+    const maxAttempts = 3;
 
-      const countRes = await client.query("SELECT COUNT(*) as count FROM participants WHERE status != 'inactive'");
-      const currentCount = Number(countRes.rows[0]?.count || 0);
+    while (attempts < maxAttempts) {
+      try {
+        result = await db.transaction(async (client) => {
+          // Serialize concurrent registrations to prevent duplicate contest_number collisions
+          await client.query('LOCK TABLE participants IN SHARE ROW EXCLUSIVE MODE');
 
-      if (currentCount >= limit) {
-        throw new Error('CAPACITY_REACHED');
+          // 1. Check settings & capacity limit
+          const settingsRes = await client.query('SELECT registration_limit FROM contest_settings WHERE id = 1');
+          const limit = Number(settingsRes.rows[0]?.registration_limit || 100);
+
+          const countRes = await client.query("SELECT COUNT(*) as count FROM participants WHERE status != 'inactive'");
+          const currentCount = Number(countRes.rows[0]?.count || 0);
+
+          if (currentCount >= limit) {
+            throw new Error('CAPACITY_REACHED');
+          }
+
+          // 2. Check if identity already registered
+          const existingRes = await client.query(
+            "SELECT id FROM participants WHERE institutional_identifier = $1 AND status != 'inactive'",
+            [normalizedId]
+          );
+          if (existingRes.rowCount > 0) {
+            throw new Error('DUPLICATE_IDENTIFIER');
+          }
+
+          // 3. Determine next official contest number
+          const maxNumRes = await client.query('SELECT COALESCE(MAX(contest_number), 0) as max_num FROM participants');
+          const nextContestNumber = Number(maxNumRes.rows[0].max_num) + 1;
+
+          // 4. Generate unique registration folio
+          const randomPart = crypto.randomBytes(3).toString('hex').toUpperCase();
+          const registrationFolio = `FMVZ-REG-2026-${String(nextContestNumber).padStart(3, '0')}-${randomPart}`;
+
+          // 5. Insert participant record as 'pending'
+          await client.query(`
+            INSERT INTO participants (
+              contest_number, full_name, public_display_name, costume_title,
+              description, participant_type, institutional_identifier,
+              photo_original_key, photo_thumbnail_key, status, registration_folio
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $8, 'pending', $9)
+          `, [
+            nextContestNumber,
+            data.full_name,
+            data.public_display_name,
+            data.costume_title,
+            data.description || '',
+            data.participant_type,
+            normalizedId,
+            photoPath,
+            registrationFolio,
+          ]);
+
+          return {
+            contest_number: nextContestNumber,
+            registration_folio: registrationFolio,
+          };
+        });
+        break; // Éxito, salir del bucle
+      } catch (txnErr: any) {
+        attempts++;
+        if (
+          attempts >= maxAttempts ||
+          txnErr.message === 'CAPACITY_REACHED' ||
+          txnErr.message === 'DUPLICATE_IDENTIFIER'
+        ) {
+          throw txnErr;
+        }
+        // Esperar entre 40 y 100 ms antes de reintentar
+        await new Promise((resolve) => setTimeout(resolve, 40 * attempts));
       }
-
-      // 2. Check if identity already registered
-      const existingRes = await client.query(
-        "SELECT id FROM participants WHERE institutional_identifier = $1 AND status != 'inactive'",
-        [normalizedId]
-      );
-      if (existingRes.rowCount > 0) {
-        throw new Error('DUPLICATE_IDENTIFIER');
-      }
-
-      // 3. Determine next official contest number
-      const maxNumRes = await client.query('SELECT COALESCE(MAX(contest_number), 0) as max_num FROM participants');
-      const nextContestNumber = Number(maxNumRes.rows[0].max_num) + 1;
-
-      // 4. Generate unique registration folio
-      const randomPart = crypto.randomBytes(3).toString('hex').toUpperCase();
-      const registrationFolio = `FMVZ-REG-2026-${String(nextContestNumber).padStart(3, '0')}-${randomPart}`;
-
-      // 5. Insert participant record as 'pending'
-      await client.query(`
-        INSERT INTO participants (
-          contest_number, full_name, public_display_name, costume_title,
-          description, participant_type, institutional_identifier,
-          photo_original_key, photo_thumbnail_key, status, registration_folio
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $8, 'pending', $9)
-      `, [
-        nextContestNumber,
-        data.full_name,
-        data.public_display_name,
-        data.costume_title,
-        data.description || '',
-        data.participant_type,
-        normalizedId,
-        photoPath,
-        registrationFolio,
-      ]);
-
-      return {
-        contest_number: nextContestNumber,
-        registration_folio: registrationFolio,
-      };
-    });
+    }
 
     res.status(201).json({
       success: true,

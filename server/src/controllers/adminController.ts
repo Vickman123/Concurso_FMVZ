@@ -264,6 +264,9 @@ export async function importParticipantsCsv(req: Request, res: Response): Promis
     const errors: string[] = [];
 
     await db.transaction(async (client) => {
+      // Serialize table to prevent collisions with live registrations
+      await client.query('LOCK TABLE participants IN SHARE ROW EXCLUSIVE MODE');
+
       // Find current max contest number
       const maxNumRes = await client.query('SELECT COALESCE(MAX(contest_number), 0) as max_num FROM participants');
       let currentMaxNum = Number(maxNumRes.rows[0].max_num);
