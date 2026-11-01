@@ -5,6 +5,10 @@ export const voteRateLimiter = rateLimit({
   max: 60, // 60 requests per minute per IP
   standardHeaders: true,
   legacyHeaders: false,
+  skip: (req) => {
+    const bypass = req.headers['x-bypass-ratelimit'];
+    return Boolean(bypass && process.env.GATEWAY_SECRET && bypass === process.env.GATEWAY_SECRET);
+  },
   message: {
     error: 'Demasiadas solicitudes de votación desde esta red. Por favor espera un momento.',
   },
@@ -15,6 +19,10 @@ export const registrationRateLimiter = rateLimit({
   max: 15, // 15 registrations per 5 minutes per IP
   standardHeaders: true,
   legacyHeaders: false,
+  skip: (req) => {
+    const bypass = req.headers['x-bypass-ratelimit'];
+    return Boolean(bypass && process.env.GATEWAY_SECRET && bypass === process.env.GATEWAY_SECRET);
+  },
   message: {
     error: 'Has alcanzado el límite temporal de registros. Por favor intenta más tarde.',
   },
