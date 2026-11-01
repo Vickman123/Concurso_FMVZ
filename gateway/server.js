@@ -34,7 +34,7 @@ const app = express();
 
 // Configuración general
 const PORT = process.env.PORT || 3000;
-const OVH_BACKEND_URL = (process.env.OVH_BACKEND_URL || 'http://135.148.166.89').trim().replace(/\/+$/, '');
+const OVH_BACKEND_URL = (process.env.OVH_BACKEND_URL || 'https://135-148-166-89.sslip.io').trim().replace(/\/+$/, '');
 const GATEWAY_SECRET = (process.env.GATEWAY_SECRET || '').trim();
 const rawClientPath = process.env.CLIENT_DIST_PATH || '../client/dist';
 const CLIENT_DIST_PATH = path.isAbsolute(rawClientPath) ? rawClientPath : path.resolve(__dirname, rawClientPath);

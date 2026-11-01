@@ -12,7 +12,7 @@ services:
       - key: NODE_ENV
         value: production
       - key: OVH_BACKEND_URL
-        value: http://135.148.166.89
+        value: https://135-148-166-89.sslip.io
       - key: GATEWAY_SECRET
         sync: false
       - key: CLIENT_DIST_PATH
