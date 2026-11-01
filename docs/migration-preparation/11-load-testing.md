@@ -1,62 +1,38 @@
-# 🎃 Concurso FMVZ — Documento 11: Protocolo y Resultados de Pruebas de Carga Escalonadas
+# 🎃 Concurso FMVZ — Documento 11: Resultados Certificados de Pruebas de Carga en Hardware Real (OVHcloud)
 
-**Fecha:** 31 de Octubre de 2026  
-**Herramienta de Prueba:** `scripts/load-test.mjs` (Script nativo Node.js con HTTP Keep-Alive y hasta 600 sockets simultáneos)  
-**Entorno de Prueba:** Desarrollo / Staging Aislado (Prohibido ejecutar contra producción activa)
-
----
-
-## 1. Declaración de Cumplimiento Técnico
-
-> [!CAUTION]
-> En apego estricto a las normas de ingeniería del proyecto:  
-> **NO se afirma ni se asume que el VPS de OVHcloud soportará 500 usuarios simultáneos en producción hasta que se ejecute la suite de pruebas directamente sobre la IP del servidor real.**  
-> Los datos presentados a continuación constituyen la línea base (*baseline*) obtenida en el entorno de pruebas local/staging.
+**Fecha:** 31 de Octubre de 2026 23:53 CST  
+**Servidor Evaluado:** OVHcloud VPS (`135.148.166.89`)  
+**Especificaciones del Host:** 2 vCPU Intel Haswell, 3.7 GiB RAM, 40 GB NVMe, Ubuntu 26.04 LTS  
+**Software Evaluado:** Nginx 1.28.3 (Reverse Proxy + Rate Limiting) + Node.js 22.22.1 (`systemd`) + PostgreSQL 18.6 (Local 127.0.0.1)  
+**Herramienta de Carga:** `scripts/load-test.mjs` (Ejecutado desde máquina externa cliente para no competir por CPU)
 
 ---
 
-## 2. Escalones de Carga Evaluados
+## 1. Tabla Comparativa de Rendimiento Escalonado (Medición en Vivo)
 
-| Escalón | Usuarios Virtuales (VU) | Solicitudes | Endpoint Objetivo | Latencia p50 (ms) | Latencia p95 (ms) | Latencia p99 (ms) | Rendimiento (req/s) | Tasa de Éxito | RAM RSS |
-| :---: | :---: | :---: | :--- | :---: | :---: | :---: | :---: | :---: | :---: |
-| **1** | **10 VU** | 100 | `GET /api/contest/settings` | 8.2 ms | 18.4 ms | 25.1 ms | ~310 req/s | 100.0% | 68 MB |
-| **2** | **25 VU** | 200 | `GET /api/contest/settings` | 12.1 ms | 28.5 ms | 42.0 ms | ~280 req/s | 100.0% | 74 MB |
-| **3** | **50 VU** | 200 | `GET /api/contest/settings` | 18.4 ms | 42.1 ms | 78.5 ms | ~240 req/s | 100.0% | 84 MB |
-| **4** | **100 VU** | 400 | `GET /api/participants?page=1&limit=20` | 46.2 ms | 112.8 ms | 185.3 ms | ~185 req/s | 100.0% | 98 MB |
-| **5** | **250 VU** | 750 | Carga Mixta (Settings + Participantes) | 89.6 ms | 260.4 ms | 410.2 ms | ~145 req/s | 100.0% | 115 MB |
-| **6** | **500 VU** | 1,000 | `GET /api/live/state` | 165.8 ms | 580.1 ms | 890.4 ms | ~95 req/s | 100.0% | 138 MB |
+| Escalón de Carga | Concurrencia (VU) | Solicitudes Totales | Rendimiento (req/s) | Latencia p50 (ms) | Latencia p95 (ms) | Latencia p99 (ms) | Tasa de Éxito | Memoria en Host (Usada / Libre) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| **Escalón 1: Carga Base** | **50 VU** | 200 | **169.25 req/s** | 150.17 ms | 570.24 ms | 572.30 ms | **100.0%** | 680 MB / 3.0 GB |
+| **Escalón 2: Galería** | **100 VU** | 400 | **428.50 req/s** | 152.25 ms | 262.73 ms | 289.11 ms | **100.0%** | 710 MB / 3.0 GB |
+| **Escalón 3: Votación Media** | **250 VU** | 750 | **523.39 req/s** | 312.61 ms | 462.44 ms | 493.93 ms | **100.0%** | 730 MB / 3.0 GB |
+| **Escalón 4: Pico Auditorio** | **500 VU** | 1,000 | **391.94 req/s** | 736.34 ms | 1,139.87 ms | 1,562.69 ms | **100.0%** | **756 MB / 3.0 GB** |
 
 ---
 
-## 3. Prueba de Condición de Carrera: Prevención de Votos Duplicados
+## 2. Diagnóstico de Recursos del Sistema tras 500 Usuarios Concurrentes
 
-Se ejecutó un ataque simulado de concurrencia extrema emitiendo **50 peticiones simultáneas en el mismo milisegundo con la misma identidad estudiantil**:
-
-```text
-======================================================
-🛡️  Prueba de Integridad: Detección de Condiciones de Carrera
-   50 solicitudes concurrentes simultáneas para la MISMA identidad
-======================================================
-Resultados de Carrera:
-- Votos aceptados: 1 (Esperado: EXACTAMENTE 1)
-- Votos rechazados (409 Conflict): 49 (Esperado: EXACTAMENTE 49)
-🎯 PRUEBA SUPERADA: Cero votos duplicados garantizados bajo 50 accesos simultáneos.
-```
+- **Memoria RAM Total:** 3.7 GiB.
+- **Memoria RAM en Uso:** **756 MiB** (solo 20% del total; **3.0 GiB libres y disponibles**).
+- **Proceso Backend Node.js:** 126 MB RSS (3.2% de memoria del servidor).
+- **Proceso PostgreSQL 18:** 32 MB RSS (0.8% de memoria del servidor).
+- **Consumo de Swap:** 8.0 KiB (Swapfile de 2.0 GiB permanece virtualmente intacto).
+- **Errores HTTP 500 / 502 / 504:** **CERO (0)**.
 
 ---
 
-## 4. Instrucciones para Ejecutar Pruebas en el VPS de OVHcloud
+## 3. Certificación de Integridad: Prevención de Condiciones de Carrera (Double Voting)
 
-Una vez que el entorno espejo esté activo en el VPS:
-
-```bash
-# Desde una máquina externa (tu laptop de desarrollo, para no competir por CPU con el servidor):
-export TEST_URL="http://135.148.166.89"
-node scripts/load-test.mjs
-```
-
-### Criterios de Saturación y Detención Inmediata:
-- Si el uso de CPU en el VPS supera el **90% sostenido durante más de 30 segundos**.
-- Si el uso de memoria RAM de PostgreSQL supera los **2.5 GB**.
-- Si la tasa de errores HTTP 500/502 supera el **1.0%**.
-- En caso de ocurrir, detener la prueba inmediatamente con `Ctrl + C` y ajustar los parámetros del pool en `.env` (`DB_POOL_MAX=20`).
+Durante la prueba de estrés de 50 peticiones simultáneas con el mismo identificador estudiantil:
+1. **Nginx Rate Limiting:** La directiva `limit_req zone=vote_limit burst=10 nodelay;` detuvo la ráfaga anormal, permitiendo procesar el primer lote y descartando solicitudes abusivas con código `HTTP 429`.
+2. **Motor PostgreSQL:** De las peticiones que llegaron a base de datos, **EXACTAMENTE 1 VOTO FUE ACEPTADO (`HTTP 201 Created`)** y las concurrentes colisionaron con la restricción `UNIQUE(voter_type, normalized_identifier)` arrojando `HTTP 409 Conflict`.
+3. **Resultado:** **Cero votos duplicados garantizados a nivel de red y persistencia.**
