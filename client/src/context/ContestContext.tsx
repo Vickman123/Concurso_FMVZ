@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { ContestSettings, VoterIdentity, VoteReceipt } from '../types';
+import { getApiUrl } from '../services/api';
 
 interface ContestContextType {
   settings: ContestSettings | null;
@@ -50,7 +51,7 @@ export const ContestProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const refreshSettings = async () => {
     try {
-      const res = await fetch('/api/contest/settings');
+      const res = await fetch(getApiUrl('/api/contest/settings'));
       if (res.ok) {
         const data = await res.json();
         setSettings(data);

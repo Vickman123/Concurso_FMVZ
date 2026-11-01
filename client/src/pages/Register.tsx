@@ -12,6 +12,7 @@ import {
   Sparkles
 } from 'lucide-react';
 import { GlowingPumpkin } from '../components/HalloweenDecorations';
+import { getApiUrl } from '../services/api';
 
 export const Register: React.FC = () => {
   const navigate = useNavigate();
@@ -147,7 +148,7 @@ export const Register: React.FC = () => {
         formData.append('photo', photoFile);
       }
 
-      const res = await fetch('/api/participants/register', {
+      const res = await fetch(getApiUrl('/api/participants/register'), {
         method: 'POST',
         body: formData,
       });

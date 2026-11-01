@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Trophy, Eye, EyeOff, BarChart3, RefreshCw, AlertCircle } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { getApiUrl } from '../../services/api';
 
 export const AdminResults: React.FC = () => {
   const { token, admin } = useAuth();
@@ -12,7 +13,7 @@ export const AdminResults: React.FC = () => {
   const fetchResults = async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/admin/results', {
+      const res = await fetch(getApiUrl('/api/admin/results'), {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {
@@ -41,7 +42,7 @@ export const AdminResults: React.FC = () => {
 
     setUpdating(true);
     try {
-      const res = await fetch('/api/admin/settings', {
+      const res = await fetch(getApiUrl('/api/admin/settings'), {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Trophy, Gift, Sparkles, Info, Award, ArrowRight, ShieldCheck } from 'lucide-react';
 import { useContest } from '../context/ContestContext';
 import { PrizeCategory } from '../types';
+import { getApiUrl } from '../services/api';
 
 export const Prizes: React.FC = () => {
   const { settings } = useContest();
@@ -11,7 +12,7 @@ export const Prizes: React.FC = () => {
   const [publicResults, setPublicResults] = useState<any[] | null>(null);
 
   useEffect(() => {
-    fetch('/api/contest/prizes')
+    fetch(getApiUrl('/api/contest/prizes'))
       .then(res => res.json())
       .then(data => {
         if (data.prizes) setPrizes(data.prizes);
@@ -19,7 +20,7 @@ export const Prizes: React.FC = () => {
       .catch(() => {})
       .finally(() => setLoading(false));
 
-    fetch('/api/contest/results')
+    fetch(getApiUrl('/api/contest/results'))
       .then(res => res.json())
       .then(data => {
         if (data.published && data.results) {

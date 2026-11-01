@@ -22,6 +22,7 @@ import { Participant } from '../types';
 import { ParticipantCard } from '../components/ParticipantCard';
 import { HeroVisual } from '../components/HeroVisual';
 import { GlowingPumpkin, FloatingBat, SpookyGhost } from '../components/HalloweenDecorations';
+import { getApiUrl } from '../services/api';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -37,7 +38,7 @@ export const Home: React.FC = () => {
 
   // Fetch participants for preview
   useEffect(() => {
-    fetch('/api/participants?limit=8')
+    fetch(getApiUrl('/api/participants?limit=8'))
       .then((res) => res.json())
       .then((data) => {
         if (data.participants) {

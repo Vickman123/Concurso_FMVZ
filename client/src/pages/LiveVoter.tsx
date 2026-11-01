@@ -17,6 +17,7 @@ import {
   Smile,
 } from 'lucide-react';
 import { EventLogo } from '../components/EventLogo';
+import { getApiUrl, getEventSourceUrl } from '../services/api';
 
 interface StoredVoter {
   full_name: string;
@@ -60,7 +61,7 @@ export const LiveVoter: React.FC = () => {
   useEffect(() => {
     const fetchState = async () => {
       try {
-        const res = await fetch('/api/live/state');
+        const res = await fetch(getApiUrl('/api/live/state'));
         if (res.ok) {
           const data = await res.json();
           handleIncomingState(data);
@@ -70,7 +71,7 @@ export const LiveVoter: React.FC = () => {
 
     fetchState();
 
-    const eventSource = new EventSource('/api/live/stream');
+    const eventSource = new EventSource(getEventSourceUrl('/api/live/stream'));
 
     eventSource.addEventListener('INITIAL_STATE', (e: MessageEvent) => {
       try {
@@ -192,7 +193,7 @@ export const LiveVoter: React.FC = () => {
     }
 
     try {
-      await fetch('/api/live/vote', {
+      await fetch(getApiUrl('/api/live/vote'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -219,7 +220,7 @@ export const LiveVoter: React.FC = () => {
     }
 
     try {
-      await fetch('/api/live/reaction', {
+      await fetch(getApiUrl('/api/live/reaction'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ emoji }),

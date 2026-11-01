@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { ArrowLeft, Shield, Sparkles, AlertCircle, Share2, Check, Radio } from 'lucide-react';
 import { Participant } from '../types';
 import { useContest } from '../context/ContestContext';
+import { getApiUrl } from '../services/api';
 
 export const ParticipantDetail: React.FC = () => {
   const { number } = useParams<{ number: string }>();
@@ -16,7 +17,7 @@ export const ParticipantDetail: React.FC = () => {
 
   useEffect(() => {
     setLoading(true);
-    fetch(`/api/participants/${number}`)
+    fetch(getApiUrl(`/api/participants/${number}`))
       .then(res => {
         if (!res.ok) throw new Error('Participante no encontrado');
         return res.json();

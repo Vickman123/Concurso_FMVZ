@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { CustomQrWithLogo } from '../components/CustomQrWithLogo';
 import { EventLogo } from '../components/EventLogo';
+import { getEventSourceUrl, getApiUrl } from '../services/api';
 
 interface LiveParticipant {
   id: number;
@@ -134,7 +135,7 @@ export const LiveProjector: React.FC = () => {
   // Fetch state snapshot
   const fetchState = async () => {
     try {
-      const res = await fetch('/api/live/state');
+      const res = await fetch(getApiUrl('/api/live/state'));
       if (res.ok) {
         const data = await res.json();
         if (data.connected_clients && data.connected_clients > previousClientsCountRef.current) {
@@ -154,7 +155,7 @@ export const LiveProjector: React.FC = () => {
   useEffect(() => {
     fetchState();
 
-    const eventSource = new EventSource('/api/live/stream');
+    const eventSource = new EventSource(getEventSourceUrl('/api/live/stream'));
 
     eventSource.addEventListener('INITIAL_STATE', (e: MessageEvent) => {
       try {

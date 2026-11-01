@@ -4,6 +4,7 @@ import { Search, Sparkles, Filter, RefreshCw, AlertCircle, Radio } from 'lucide-
 import { Participant } from '../types';
 import { ParticipantCard } from '../components/ParticipantCard';
 import { useContest } from '../context/ContestContext';
+import { getApiUrl } from '../services/api';
 
 export const Gallery: React.FC = () => {
   const { isLiveActive } = useContest();
@@ -23,7 +24,7 @@ export const Gallery: React.FC = () => {
       if (typeFilter !== 'all') params.append('type', typeFilter);
       if (search.trim()) params.append('search', search.trim());
 
-      const res = await fetch(`/api/participants?${params.toString()}`);
+      const res = await fetch(getApiUrl(`/api/participants?${params.toString()}`));
       if (!res.ok) throw new Error('Error al conectar con el servidor');
       const data = await res.json();
       setParticipants(data.participants || []);

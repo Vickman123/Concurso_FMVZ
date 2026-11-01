@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Trophy, Gift, Edit2, Check, AlertCircle } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { PrizeCategory } from '../../types';
+import { getApiUrl } from '../../services/api';
 
 export const AdminPrizes: React.FC = () => {
   const { token, admin } = useAuth();
@@ -14,7 +15,7 @@ export const AdminPrizes: React.FC = () => {
   const fetchPrizes = async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/admin/prizes', {
+      const res = await fetch(getApiUrl('/api/admin/prizes'), {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {
@@ -37,7 +38,7 @@ export const AdminPrizes: React.FC = () => {
     if (!editingPrize) return;
 
     try {
-      const res = await fetch(`/api/admin/prizes/${editingPrize.id}`, {
+      const res = await fetch(getApiUrl(`/api/admin/prizes/${editingPrize.id}`), {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',

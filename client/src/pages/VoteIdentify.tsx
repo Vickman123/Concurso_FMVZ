@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { Heart, Shield, CheckCircle2, AlertCircle, ArrowRight, Sparkles } from 'lucide-react';
 import { useContest } from '../context/ContestContext';
+import { getApiUrl } from '../services/api';
 
 export const VoteIdentify: React.FC = () => {
   const navigate = useNavigate();
@@ -33,7 +34,7 @@ export const VoteIdentify: React.FC = () => {
 
     setLoading(true);
     try {
-      const res = await fetch('/api/vote/identify', {
+      const res = await fetch(getApiUrl('/api/vote/identify'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

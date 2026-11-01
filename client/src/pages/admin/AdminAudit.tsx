@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { FileText, Shield, RefreshCw, Search } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { AuditLogItem } from '../../types';
+import { getApiUrl } from '../../services/api';
 
 export const AdminAudit: React.FC = () => {
   const { token } = useAuth();
@@ -12,7 +13,7 @@ export const AdminAudit: React.FC = () => {
   const fetchLogs = async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/admin/audit-logs', {
+      const res = await fetch(getApiUrl('/api/admin/audit-logs'), {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {

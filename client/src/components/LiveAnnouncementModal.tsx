@@ -13,6 +13,7 @@ import {
   Clock,
 } from 'lucide-react';
 import { useContest } from '../context/ContestContext';
+import { getApiUrl } from '../services/api';
 
 interface LiveStageInfo {
   stage_status: string;
@@ -56,7 +57,7 @@ export const LiveAnnouncementModal: React.FC = () => {
 
     const fetchLiveInfo = async () => {
       try {
-        const res = await fetch('/api/live/state');
+        const res = await fetch(getApiUrl('/api/live/state'));
         if (res.ok) {
           const data = await res.json();
           setStageInfo({

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Search, Shield, CheckCircle2, Clock, AlertTriangle, XCircle, ArrowLeft } from 'lucide-react';
+import { getApiUrl } from '../services/api';
 
 export const CheckStatus: React.FC = () => {
   const [folio, setFolio] = useState('');
@@ -28,7 +29,7 @@ export const CheckStatus: React.FC = () => {
     setStatusResult(null);
 
     try {
-      const res = await fetch('/api/participants/check-status', {
+      const res = await fetch(getApiUrl('/api/participants/check-status'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

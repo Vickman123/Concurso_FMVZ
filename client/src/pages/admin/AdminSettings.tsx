@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Sliders, QrCode, Download, Save, CheckCircle2, AlertTriangle, Sparkles, ShieldCheck, Database } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { CustomQrWithLogo } from '../../components/CustomQrWithLogo';
+import { getApiUrl } from '../../services/api';
 
 export const AdminSettings: React.FC = () => {
   const { token, admin } = useAuth();
@@ -18,7 +19,7 @@ export const AdminSettings: React.FC = () => {
   const handleDownloadBackup = async () => {
     setDownloadingBackup(true);
     try {
-      const res = await fetch('/api/admin/backup/export', {
+      const res = await fetch(getApiUrl('/api/admin/backup/export'), {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) throw new Error('Error al generar respaldo en el servidor');
@@ -41,7 +42,7 @@ export const AdminSettings: React.FC = () => {
   const fetchSettings = async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/contest/settings');
+      const res = await fetch(getApiUrl('/api/contest/settings'));
       if (res.ok) {
         const data = await res.json();
         setVotingStatus(data.voting_status || 'open');
@@ -52,7 +53,7 @@ export const AdminSettings: React.FC = () => {
 
       // Generate QR
       const publicUrl = window.location.origin;
-      const qrRes = await fetch(`/api/admin/qr?url=${encodeURIComponent(publicUrl)}`, {
+      const qrRes = await fetch(getApiUrl(`/api/admin/qr?url=${encodeURIComponent(publicUrl)}`), {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (qrRes.ok) {
@@ -75,7 +76,7 @@ export const AdminSettings: React.FC = () => {
     setSavedSuccess(false);
 
     try {
-      const res = await fetch('/api/admin/settings', {
+      const res = await fetch(getApiUrl('/api/admin/settings'), {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',

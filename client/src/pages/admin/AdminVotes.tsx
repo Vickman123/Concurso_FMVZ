@@ -15,6 +15,7 @@ import {
   Filter,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { getApiUrl } from '../../services/api';
 
 interface VoteRecord {
   vote_source: 'live' | 'web';
@@ -54,7 +55,7 @@ export const AdminVotes: React.FC = () => {
   const fetchVotes = async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/admin/votes', {
+      const res = await fetch(getApiUrl('/api/admin/votes'), {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {
@@ -77,7 +78,7 @@ export const AdminVotes: React.FC = () => {
   const handleExportCsv = async () => {
     setExporting(true);
     try {
-      const res = await fetch('/api/admin/votes/export-csv', {
+      const res = await fetch(getApiUrl('/api/admin/votes/export-csv'), {
         headers: { Authorization: `Bearer ${token}` },
       });
 

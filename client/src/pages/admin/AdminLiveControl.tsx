@@ -16,6 +16,7 @@ import {
   Search,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { getApiUrl, getEventSourceUrl } from '../../services/api';
 
 interface LiveParticipant {
   id: number;
@@ -52,7 +53,7 @@ export const AdminLiveControl: React.FC = () => {
   // Fetch current live state
   const fetchState = async () => {
     try {
-      const res = await fetch('/api/live/state');
+      const res = await fetch(getApiUrl('/api/live/state'));
       if (res.ok) {
         const data = await res.json();
         setState(data);
@@ -67,7 +68,7 @@ export const AdminLiveControl: React.FC = () => {
   useEffect(() => {
     fetchState();
 
-    const eventSource = new EventSource('/api/live/stream');
+    const eventSource = new EventSource(getEventSourceUrl('/api/live/stream'));
 
     eventSource.addEventListener('LIVE_STATE_CHANGED', (e: MessageEvent) => {
       try {
@@ -105,7 +106,7 @@ export const AdminLiveControl: React.FC = () => {
   const sendControlAction = async (payload: any) => {
     setActionLoading(true);
     try {
-      const res = await fetch('/api/live/control', {
+      const res = await fetch(getApiUrl('/api/live/control'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

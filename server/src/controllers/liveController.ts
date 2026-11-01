@@ -22,8 +22,8 @@ export function broadcastLiveEvent(eventType: string, data: any) {
   }
 }
 
-// Keep SSE connections alive with ping every 15s
-setInterval(() => {
+// Keep SSE connections alive with ping every 15s (unref'd to prevent blocking process exit)
+const pingInterval = setInterval(() => {
   for (const client of sseClients) {
     try {
       client.write(':ping\n\n');
@@ -35,6 +35,9 @@ setInterval(() => {
     }
   }
 }, 15000);
+if (typeof pingInterval.unref === 'function') {
+  pingInterval.unref();
+}
 
 export async function streamLiveEvents(req: Request, res: Response): Promise<void> {
   res.writeHead(200, {

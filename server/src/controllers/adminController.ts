@@ -6,6 +6,7 @@ import { stringify } from 'csv-stringify/sync';
 import { getDb } from '../db/connection';
 import { generateToken } from '../middleware/auth';
 import { adminLoginSchema, normalizeIdentifier } from '../utils/validation';
+import { savePhoto } from '../services/storageService';
 
 export async function adminLogin(req: Request, res: Response): Promise<void> {
   try {
@@ -678,13 +679,13 @@ export async function updateParticipantPhoto(req: Request, res: Response): Promi
       return;
     }
 
-    const mime = req.file.mimetype || 'image/jpeg';
-    const photoDataUrl = `data:${mime};base64,${req.file.buffer.toString('base64')}`;
+    const saved = await savePhoto(req.file);
+    const photoUrl = saved.photoUrl;
 
     const db = await getDb();
     const result = await db.query(
       'UPDATE participants SET photo_original_key = $1, photo_thumbnail_key = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING id, contest_number, public_display_name',
-      [photoDataUrl, id]
+      [photoUrl, id]
     );
 
     if (result.rowCount === 0) {
@@ -695,17 +696,17 @@ export async function updateParticipantPhoto(req: Request, res: Response): Promi
     // Audit log
     await db.query(`
       INSERT INTO audit_logs (admin_id, action, entity_type, entity_id, reason, metadata)
-      VALUES ($1, 'PARTICIPANT_PHOTO_UPDATED', 'participant', $2, 'Fotografía re-subida y guardada permanentemente en Base64', $3)
+      VALUES ($1, 'PARTICIPANT_PHOTO_UPDATED', 'participant', $2, 'Fotografía actualizada en almacenamiento persistente', $3)
     `, [
       req.admin?.id,
       String(id),
-      JSON.stringify({ contest_number: result.rows[0].contest_number })
+      JSON.stringify({ contest_number: result.rows[0].contest_number, storage_mode: saved.storageMode })
     ]);
 
     res.json({
       success: true,
-      message: 'Fotografía actualizada y almacenada permanentemente en Supabase.',
-      photo_url: photoDataUrl,
+      message: 'Fotografía actualizada y almacenada correctamente.',
+      photo_url: photoUrl,
     });
   } catch (err: any) {
     res.status(500).json({ error: 'Error al actualizar fotografía', details: err.message });

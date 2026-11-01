@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import crypto from 'crypto';
 import { getDb } from '../db/connection';
 import { participantRegistrationSchema, statusCheckSchema, normalizeIdentifier } from '../utils/validation';
+import { savePhoto } from '../services/storageService';
 
 export async function getPublicParticipants(req: Request, res: Response): Promise<void> {
   try {
@@ -101,11 +102,11 @@ export async function registerParticipant(req: Request, res: Response): Promise<
     const data = parseResult.data;
     const normalizedId = normalizeIdentifier(data.institutional_identifier);
 
-    // Photo check & Base64 conversion (Stored permanently in Supabase)
+    // Photo check & storage (Persistent disk or Base64 fallback)
     let photoPath = '/uploads/costume_default.svg';
     if (req.file && req.file.buffer) {
-      const mime = req.file.mimetype || 'image/jpeg';
-      photoPath = `data:${mime};base64,${req.file.buffer.toString('base64')}`;
+      const saved = await savePhoto(req.file);
+      photoPath = saved.photoUrl;
     } else {
       res.status(400).json({ error: 'Se requiere subir una fotografía del disfraz para completar el registro.' });
       return;

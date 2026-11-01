@@ -1,0 +1,5 @@
+# MANIFIESTO SHA256 DE INTEGRIDAD CRIPTOGRÁFICA
+# Respaldo Local Independiente — Concurso FMVZ 2026
+# Generado: 2026-10-31 20:46:40 CST
+
+33d86dc5debd6bfa4832f6b42466fd1ec2c29d91cfae2d177ae6e96f1959de90  Copia_Local_FMVZ_2026-10-31.zip

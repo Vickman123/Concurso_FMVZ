@@ -1,43 +1,67 @@
 version: '3.8'
 
+# ==============================================================================
+# FMVZ Halloween Contest — Docker Compose Architecture
+# Target: PostgreSQL 16 + Node.js 20 Backend + Persistent Volume Storage
+# Compatible with local development and Hostinger VPS deployment behind Nginx.
+# ==============================================================================
+
 services:
   db:
     image: postgres:16-alpine
     container_name: fmvz_halloween_db
-    restart: always
+    restart: unless-stopped
     environment:
-      POSTGRES_DB: fmvz_halloween
-      POSTGRES_USER: fmvz_admin
-      POSTGRES_PASSWORD: fmvz_secure_password_2026
+      POSTGRES_DB: ${POSTGRES_DB:-fmvz_halloween}
+      POSTGRES_USER: ${POSTGRES_USER:-fmvz_admin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-fmvz_local_dev_password_change_in_prod}
+      TZ: America/Mexico_City
+    # Bound to 127.0.0.1 to prevent external exposure on VPS public interfaces
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U fmvz_admin -d fmvz_halloween"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-fmvz_admin} -d ${POSTGRES_DB:-fmvz_halloween}"]
       interval: 5s
       timeout: 5s
       retries: 5
+    networks:
+      - fmvz_internal
 
   app:
     build:
       context: .
       dockerfile: Dockerfile
     container_name: fmvz_halloween_app
-    restart: always
+    restart: unless-stopped
     depends_on:
       db:
         condition: service_healthy
     environment:
       NODE_ENV: production
       PORT: 4000
-      DATABASE_URL: postgres://fmvz_admin:fmvz_secure_password_2026@db:5432/fmvz_halloween
-      JWT_SECRET: fmvz_halloween_secret_unam_2026_super_secure_key
+      DATABASE_URL: ${DATABASE_URL:-postgres://${POSTGRES_USER:-fmvz_admin}:${POSTGRES_PASSWORD:-fmvz_local_dev_password_change_in_prod}@db:5432/${POSTGRES_DB:-fmvz_halloween}}
+      DATABASE_SSL: "false"
+      DB_POOL_MAX: ${DB_POOL_MAX:-25}
+      UPLOAD_DIR: /app/server/uploads
+      STORAGE_MODE: disk
+      JWT_SECRET: ${JWT_SECRET:-fmvz_jwt_secret_dev_key_change_in_production}
+    # Bound to localhost so all public traffic enters exclusively via Nginx reverse proxy
     ports:
-      - "4000:4000"
+      - "127.0.0.1:4000:4000"
     volumes:
       - uploads_data:/app/server/uploads
+    networks:
+      - fmvz_internal
 
 volumes:
   pgdata:
+    name: fmvz_pgdata
   uploads_data:
+    name: fmvz_uploads_data
+
+networks:
+  fmvz_internal:
+    name: fmvz_internal_network
+    driver: bridge

@@ -4,7 +4,7 @@ import fs from 'fs';
 import cors from 'cors';
 import helmet from 'helmet';
 import dotenv from 'dotenv';
-import { initDb } from './db/connection';
+import { initDb, closeDb } from './db/connection';
 import { runMigrations } from './db/migrate';
 import contestRoutes from './routes/contestRoutes';
 import participantRoutes from './routes/participantRoutes';
@@ -29,12 +29,19 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 
-// Body Parsers (Support rich Base64 image payloads stored in Supabase)
+// Body Parsers (Support rich Base64 image payloads and large multipart files)
 app.use(express.json({ limit: '15mb' }));
 app.use(express.urlencoded({ extended: true, limit: '15mb' }));
 
-// Static uploads folder
-const uploadsPath = path.resolve(__dirname, '../uploads');
+// Static uploads folder (Configurable for VPS persistent storage)
+const uploadsPath = process.env.UPLOAD_DIR
+  ? path.resolve(process.env.UPLOAD_DIR)
+  : path.resolve(__dirname, '../uploads');
+
+if (!fs.existsSync(uploadsPath)) {
+  fs.mkdirSync(uploadsPath, { recursive: true });
+}
+
 app.use('/uploads', express.static(uploadsPath));
 
 import liveRoutes from './routes/liveRoutes';
@@ -85,13 +92,36 @@ async function startServer() {
     await initDb();
     await runMigrations();
 
-    app.listen(PORT, () => {
+    const server = app.listen(PORT, () => {
       console.log(`=======================================================`);
       console.log(`🎃 FMVZ HALLOWEEN — Segundo Concurso de Disfraces UNAM`);
       console.log(`🚀 Web Application running on http://localhost:${PORT}`);
       console.log(`📂 Uploads directory served from ${uploadsPath}`);
       console.log(`=======================================================`);
     });
+
+    const shutdown = async (signal: string) => {
+      console.log(`\n[Process] Received ${signal}. Starting graceful shutdown...`);
+      server.close(async () => {
+        console.log('[Process] HTTP server closed.');
+        try {
+          await closeDb();
+          console.log('[Process] Database connection pool closed.');
+          process.exit(0);
+        } catch (closeErr) {
+          console.error('[Process Error] Error during db pool close:', closeErr);
+          process.exit(1);
+        }
+      });
+
+      setTimeout(() => {
+        console.error('[Process Error] Forcefully terminating process after timeout.');
+        process.exit(1);
+      }, 10000);
+    };
+
+    process.on('SIGTERM', () => shutdown('SIGTERM'));
+    process.on('SIGINT', () => shutdown('SIGINT'));
   } catch (err) {
     console.error('Failed to start server:', err);
     process.exit(1);

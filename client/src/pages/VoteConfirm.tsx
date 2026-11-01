@@ -4,6 +4,7 @@ import { ArrowLeft, Heart, Sparkles, Shield, AlertCircle, CheckCircle2 } from 'l
 import confetti from 'canvas-confetti';
 import { Participant } from '../types';
 import { useContest } from '../context/ContestContext';
+import { getApiUrl } from '../services/api';
 
 export const VoteConfirm: React.FC = () => {
   const { numero } = useParams<{ numero: string }>();
@@ -21,7 +22,7 @@ export const VoteConfirm: React.FC = () => {
   const [inlineId, setInlineId] = useState('');
 
   useEffect(() => {
-    fetch(`/api/participants/${numero}`)
+    fetch(getApiUrl(`/api/participants/${numero}`))
       .then(res => {
         if (!res.ok) throw new Error('Participante no encontrado');
         return res.json();
@@ -59,7 +60,7 @@ export const VoteConfirm: React.FC = () => {
 
     setIsSubmitting(true);
     try {
-      const res = await fetch('/api/vote/cast', {
+      const res = await fetch(getApiUrl('/api/vote/cast'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

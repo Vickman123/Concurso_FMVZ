@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Camera, Check, X, AlertTriangle, RefreshCw } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { getApiUrl } from '../../services/api';
 
 export const AdminPhotos: React.FC = () => {
   const { token } = useAuth();
@@ -10,7 +11,7 @@ export const AdminPhotos: React.FC = () => {
   const fetchPendingPhotos = async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/admin/photos/pending', {
+      const res = await fetch(getApiUrl('/api/admin/photos/pending'), {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {
@@ -33,7 +34,7 @@ export const AdminPhotos: React.FC = () => {
       const reason = prompt(`Motivo de la decisión para marcar como ${status}:`, status === 'approved' ? 'Fotografía aprobada para galería' : 'Requiere foto de mayor calidad');
       if (reason === null) return;
 
-      const res = await fetch(`/api/admin/participants/${id}/status`, {
+      const res = await fetch(getApiUrl(`/api/admin/participants/${id}/status`), {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',

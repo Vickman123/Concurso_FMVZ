@@ -14,6 +14,7 @@ import {
   FileSpreadsheet
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { getApiUrl } from '../../services/api';
 
 export const AdminDashboard: React.FC = () => {
   const { token, admin } = useAuth();
@@ -22,7 +23,7 @@ export const AdminDashboard: React.FC = () => {
 
   const fetchStats = async () => {
     try {
-      const res = await fetch('/api/admin/stats', {
+      const res = await fetch(getApiUrl('/api/admin/stats'), {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {
@@ -43,7 +44,7 @@ export const AdminDashboard: React.FC = () => {
   const handleToggleVoting = async (newStatus: 'open' | 'closed' | 'paused') => {
     if (!confirm(`¿Confirmas cambiar el estado de la votación a: ${newStatus.toUpperCase()}?`)) return;
     try {
-      await fetch('/api/admin/settings', {
+      await fetch(getApiUrl('/api/admin/settings'), {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',

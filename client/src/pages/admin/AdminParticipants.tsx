@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { Participant } from '../../types';
+import { getApiUrl } from '../../services/api';
 
 export const AdminParticipants: React.FC = () => {
   const { token, admin } = useAuth();
@@ -51,7 +52,7 @@ export const AdminParticipants: React.FC = () => {
       const formData = new FormData();
       formData.append('photo', file);
 
-      const res = await fetch(`/api/admin/participants/${selectedParticipant.id}/photo`, {
+      const res = await fetch(getApiUrl(`/api/admin/participants/${selectedParticipant.id}/photo`), {
         method: 'PATCH',
         headers: { Authorization: `Bearer ${token}` },
         body: formData,
@@ -96,7 +97,7 @@ export const AdminParticipants: React.FC = () => {
       if (typeFilter !== 'all') params.append('type', typeFilter);
       if (search.trim()) params.append('search', search.trim());
 
-      const res = await fetch(`/api/admin/participants?${params.toString()}`, {
+      const res = await fetch(getApiUrl(`/api/admin/participants?${params.toString()}`), {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {
@@ -119,7 +120,7 @@ export const AdminParticipants: React.FC = () => {
     const finalStatus = statusToSet || newStatus;
     setUpdatingStatus(true);
     try {
-      const res = await fetch(`/api/admin/participants/${selectedParticipant.id}/status`, {
+      const res = await fetch(getApiUrl(`/api/admin/participants/${selectedParticipant.id}/status`), {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -152,7 +153,7 @@ export const AdminParticipants: React.FC = () => {
       const formData = new FormData();
       formData.append('file', importFile);
 
-      const res = await fetch('/api/admin/participants/import-csv', {
+      const res = await fetch(getApiUrl('/api/admin/participants/import-csv'), {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
         body: formData,
