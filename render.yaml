@@ -3,13 +3,15 @@ services:
     name: concurso-fmvz
     env: node
     plan: free
-    buildCommand: npm install --include=dev && npm run build
-    startCommand: npm start
+    buildCommand: npm install && npm run build --workspace=client
+    startCommand: node gateway/server.js
     healthCheckPath: /api/health
     envVars:
       - key: NODE_ENV
         value: production
-      - key: DATABASE_URL
+      - key: OVH_BACKEND_URL
+        value: https://135-148-166-89.sslip.io
+      - key: GATEWAY_SECRET
         sync: false
-      - key: JWT_SECRET
-        sync: false
+      - key: CLIENT_DIST_PATH
+        value: ./client/dist
