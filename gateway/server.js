@@ -137,6 +137,7 @@ const generalLimiter = rateLimit({
   max: 150, // 150 peticiones por minuto por IP
   standardHeaders: true,
   legacyHeaders: false,
+  skip: (req) => Boolean(GATEWAY_SECRET && req.headers['x-bypass-ratelimit'] === GATEWAY_SECRET),
   message: { error: 'Demasiadas solicitudes al gateway. Por favor, intente de nuevo en un minuto.' },
 });
 
@@ -145,6 +146,7 @@ const voteLimiter = rateLimit({
   max: 20, // 20 intentos de emisión de voto por minuto por IP
   standardHeaders: true,
   legacyHeaders: false,
+  skip: (req) => Boolean(GATEWAY_SECRET && req.headers['x-bypass-ratelimit'] === GATEWAY_SECRET),
   message: { error: 'Demasiados intentos de emisión de voto. Espere un momento antes de reintentar.' },
 });
 
