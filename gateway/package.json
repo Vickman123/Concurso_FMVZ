@@ -1,0 +1,17 @@
+{
+  "name": "fmvz-gateway",
+  "version": "1.0.0",
+  "description": "Render to OVHcloud HTTP Gateway for Concurso FMVZ UNAM",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node tests/gateway.test.mjs"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "express-rate-limit": "^7.5.0",
+    "helmet": "^8.0.0",
+    "http-proxy-middleware": "^3.0.3"
+  }
+}

@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: concurso-fmvz
+    env: node
+    plan: free
+    region: oregon
+    branch: migration/render-gateway
+    buildCommand: npm install && npm run build --workspace=client
+    startCommand: npm run start:gateway
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: OVH_BACKEND_URL
+        value: http://135.148.166.89
+      - key: GATEWAY_SECRET
+        sync: false
+      - key: CLIENT_DIST_PATH
+        value: ./client/dist

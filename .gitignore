@@ -3,6 +3,9 @@ dist
 .env
 .env.*
 !.env.example
+gateway/.env
+gateway/.env.*
+!gateway/.env.example
 server/.env
 server/.env.*
 !server/.env.example

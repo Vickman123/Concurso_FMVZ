@@ -26,8 +26,11 @@ app.use(helmet({
 app.use(cors({
   origin: '*',
   methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Gateway-Secret'],
 }));
+
+import { validateGatewaySecret } from './middleware/gatewayAuth';
+app.use(validateGatewaySecret);
 
 // Body Parsers (Support rich Base64 image payloads and large multipart files)
 app.use(express.json({ limit: '15mb' }));
