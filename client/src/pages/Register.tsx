@@ -438,8 +438,7 @@ export const Register: React.FC = () => {
             <div className="relative border-2 border-dashed border-halloween-purple/40 hover:border-halloween-purple rounded-3xl p-6 text-center bg-surface-raised/40 transition-colors">
               <input
                 type="file"
-                accept="image/jpeg,image/png,image/webp"
-                capture="environment"
+                accept="image/*,image/jpeg,image/png,image/webp"
                 onChange={handlePhotoSelect}
                 className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
               />
