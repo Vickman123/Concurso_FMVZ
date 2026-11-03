@@ -40,6 +40,7 @@ interface LiveParticipant {
 
 interface LiveState {
   is_active?: boolean;
+  is_massive_active?: boolean;
   stage_status: 'waiting' | 'presenting' | 'voting_open' | 'voting_closed' | 'podium';
   current_participant_id: number | null;
   current_participant: LiveParticipant | null;
@@ -410,6 +411,21 @@ export const LiveProjector: React.FC = () => {
           </button>
         </div>
       </header>
+
+      {/* Massive Live Voting Announcement Banner on Projector */}
+      {state.is_massive_active && (
+        <div className="bg-gradient-to-r from-emerald-950 via-teal-900 to-emerald-950 border-b border-emerald-500/70 py-2.5 px-6 text-center shadow-[0_0_25px_rgba(16,185,129,0.4)] animate-pulse z-30">
+          <div className="flex items-center justify-center gap-3 text-emerald-200">
+            <span className="text-xl">⚡</span>
+            <span className="font-display font-black text-sm sm:text-base tracking-wide uppercase">
+              ¡VOTACIÓN MASIVA ABIERTA EN SUS CELULARES!
+            </span>
+            <span className="hidden md:inline text-xs bg-emerald-500/20 px-3 py-1 rounded-full border border-emerald-400/40 text-emerald-300">
+              Escaneen el QR en pantalla o entren a /votar/en-vivo para calificar a todos los disfraces
+            </span>
+          </div>
+        </div>
+      )}
 
       {/* Main Auditorium Projection Canvas */}
       <main className="flex-1 flex items-center justify-center p-4 sm:p-8 z-20 relative">

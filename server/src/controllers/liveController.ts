@@ -84,7 +84,8 @@ export async function fetchCurrentLiveState() {
 
   // 1. Get stage session
   const sessionRes = await db.query(`
-    SELECT stage_status, current_participant_id, voting_seconds_left, total_cheers, updated_at, is_active
+    SELECT stage_status, current_participant_id, voting_seconds_left, total_cheers, updated_at, is_active,
+           COALESCE(is_massive_active, false) as is_massive_active
     FROM live_stage_session
     WHERE id = 1
   `);
@@ -93,11 +94,11 @@ export async function fetchCurrentLiveState() {
   if (!session) {
     // If not exists, insert default
     await db.query(`
-      INSERT INTO live_stage_session (id, stage_status, voting_seconds_left, total_cheers, is_active)
-      VALUES (1, 'waiting', 30, 0, false)
+      INSERT INTO live_stage_session (id, stage_status, voting_seconds_left, total_cheers, is_active, is_massive_active)
+      VALUES (1, 'waiting', 30, 0, false, false)
       ON CONFLICT (id) DO NOTHING
     `);
-    session = { stage_status: 'waiting', current_participant_id: null, voting_seconds_left: 30, total_cheers: 0, is_active: false };
+    session = { stage_status: 'waiting', current_participant_id: null, voting_seconds_left: 30, total_cheers: 0, is_active: false, is_massive_active: false };
   }
 
   // 2. Current participant info
@@ -138,22 +139,48 @@ export async function fetchCurrentLiveState() {
   const votersCountRes = await db.query(`SELECT COUNT(*) as count FROM voters`);
   const totalVotersRegistered = parseInt(votersCountRes.rows[0]?.count || '0', 10);
 
-  // 4. All participants for switcher and ranking (include approved and pending for testing)
-  const allPartsRes = await db.query(`
-    SELECT p.id, p.contest_number, p.public_display_name, p.costume_title, p.photo_thumbnail_key, p.photo_original_key, p.status,
-           COALESCE((SELECT COUNT(*) FROM live_votes lv WHERE lv.participant_id = p.id AND lv.vote_value = 'yes'), 0) as live_yes_votes,
-           COALESCE((SELECT COUNT(*) FROM votes v WHERE v.participant_id = p.id AND v.status = 'valid'), 0) as web_votes,
-           (
-             COALESCE((SELECT COUNT(*) FROM live_votes lv WHERE lv.participant_id = p.id AND lv.vote_value = 'yes'), 0) +
-             COALESCE((SELECT COUNT(*) FROM votes v WHERE v.participant_id = p.id AND v.status = 'valid'), 0)
-           ) as total_votes
-    FROM participants p
-    WHERE p.status IN ('approved', 'pending')
-    ORDER BY p.contest_number ASC
-  `);
+  // 4. All participants for switcher, ranking and massive voting
+  let allPartsRes: any;
+  try {
+    allPartsRes = await db.query(`
+      SELECT p.id, p.contest_number, p.public_display_name, p.costume_title, p.photo_thumbnail_key, p.photo_original_key, p.status, p.description,
+             COALESCE((SELECT COUNT(*) FROM live_votes lv WHERE lv.participant_id = p.id AND lv.vote_value = 'yes'), 0) as live_yes_votes,
+             COALESCE((SELECT COUNT(*) FROM votes v WHERE v.participant_id = p.id AND v.status = 'valid'), 0) as web_votes,
+             COALESCE((SELECT COUNT(*) FROM live_massive_votes lmv WHERE lmv.participant_id = p.id AND lmv.vote_value = 'yes'), 0) as massive_yes_votes,
+             (
+               COALESCE((SELECT COUNT(*) FROM live_votes lv WHERE lv.participant_id = p.id AND lv.vote_value = 'yes'), 0) +
+               COALESCE((SELECT COUNT(*) FROM live_massive_votes lmv WHERE lmv.participant_id = p.id AND lmv.vote_value = 'yes'), 0)
+             ) as total_live_combined,
+             (
+               COALESCE((SELECT COUNT(*) FROM live_votes lv WHERE lv.participant_id = p.id AND lv.vote_value = 'yes'), 0) +
+               COALESCE((SELECT COUNT(*) FROM votes v WHERE v.participant_id = p.id AND v.status = 'valid'), 0) +
+               COALESCE((SELECT COUNT(*) FROM live_massive_votes lmv WHERE lmv.participant_id = p.id AND lmv.vote_value = 'yes'), 0)
+             ) as total_votes
+      FROM participants p
+      WHERE p.status IN ('approved', 'pending')
+      ORDER BY p.contest_number ASC
+    `);
+  } catch {
+    // Fallback if live_massive_votes table not created yet
+    allPartsRes = await db.query(`
+      SELECT p.id, p.contest_number, p.public_display_name, p.costume_title, p.photo_thumbnail_key, p.photo_original_key, p.status, p.description,
+             COALESCE((SELECT COUNT(*) FROM live_votes lv WHERE lv.participant_id = p.id AND lv.vote_value = 'yes'), 0) as live_yes_votes,
+             COALESCE((SELECT COUNT(*) FROM votes v WHERE v.participant_id = p.id AND v.status = 'valid'), 0) as web_votes,
+             0 as massive_yes_votes,
+             COALESCE((SELECT COUNT(*) FROM live_votes lv WHERE lv.participant_id = p.id AND lv.vote_value = 'yes'), 0) as total_live_combined,
+             (
+               COALESCE((SELECT COUNT(*) FROM live_votes lv WHERE lv.participant_id = p.id AND lv.vote_value = 'yes'), 0) +
+               COALESCE((SELECT COUNT(*) FROM votes v WHERE v.participant_id = p.id AND v.status = 'valid'), 0)
+             ) as total_votes
+      FROM participants p
+      WHERE p.status IN ('approved', 'pending')
+      ORDER BY p.contest_number ASC
+    `);
+  }
 
   return {
     is_active: Boolean(session.is_active),
+    is_massive_active: Boolean(session.is_massive_active),
     stage_status: session.stage_status,
     current_participant_id: session.current_participant_id,
     current_participant: currentParticipant,
@@ -161,10 +188,12 @@ export async function fetchCurrentLiveState() {
     total_cheers: session.total_cheers,
     current_votes: currentVotes,
     total_voters_registered: totalVotersRegistered,
-    participants: allPartsRes.rows.map(r => ({
+    participants: allPartsRes.rows.map((r: any) => ({
       ...r,
       live_yes_votes: parseInt(r.live_yes_votes || '0', 10),
       web_votes: parseInt(r.web_votes || '0', 10),
+      massive_yes_votes: parseInt(r.massive_yes_votes || '0', 10),
+      total_live_combined: parseInt(r.total_live_combined || '0', 10),
       total_votes: parseInt(r.total_votes || '0', 10),
     })),
     connected_clients: Math.max(1, sseClients.size),
@@ -385,6 +414,16 @@ export async function adminControlLive(req: Request, res: Response): Promise<voi
         SET is_live_active = $1, updated_at = CURRENT_TIMESTAMP
         WHERE id = 1
       `, [newActive]);
+    } else if (action === 'TOGGLE_MASSIVE_VOTING' || action === 'SET_MASSIVE_VOTING') {
+      const currentMassiveRes = await db.query('SELECT COALESCE(is_massive_active, false) as is_massive_active FROM live_stage_session WHERE id = 1');
+      const currentMassive = Boolean(currentMassiveRes.rows[0]?.is_massive_active);
+      const newMassive = req.body.is_massive_active !== undefined ? Boolean(req.body.is_massive_active) : !currentMassive;
+
+      await db.query(`
+        UPDATE live_stage_session
+        SET is_massive_active = $1, updated_at = CURRENT_TIMESTAMP
+        WHERE id = 1
+      `, [newMassive]);
     } else {
       res.status(400).json({ error: 'Acción no reconocida' });
       return;
@@ -510,5 +549,127 @@ export async function sendLiveReaction(req: Request, res: Response): Promise<voi
     res.json({ success: true, emoji: safeEmoji });
   } catch (err: any) {
     res.status(500).json({ error: 'Error al enviar reacción', details: err.message });
+  }
+}
+
+export async function castMassiveLiveVote(req: Request, res: Response): Promise<void> {
+  try {
+    const { voter_type, institutional_identifier, full_name, participant_id, vote } = req.body;
+
+    if (!voter_type || !institutional_identifier || !participant_id) {
+      res.status(400).json({ error: 'Faltan campos obligatorios para emitir voto masivo' });
+      return;
+    }
+
+    const normalizedId = normalizeIdentifier(institutional_identifier);
+    const db = await getDb();
+
+    // Check if massive voting is active
+    const sessionRes = await db.query('SELECT COALESCE(is_massive_active, false) as is_massive_active FROM live_stage_session WHERE id = 1');
+    const isMassiveActive = Boolean(sessionRes.rows[0]?.is_massive_active);
+
+    if (!isMassiveActive) {
+      res.status(403).json({
+        error: 'MASSIVE_VOTING_CLOSED',
+        message: 'La votación masiva no está abierta en este momento.',
+      });
+      return;
+    }
+
+    const resolvedName = full_name?.trim() || (voter_type === 'student' ? `Alumno (${normalizedId})` : `Profesor (${normalizedId})`);
+
+    // Upsert voter
+    let voterId: number;
+    const voterRes = await db.query(
+      'SELECT id FROM voters WHERE voter_type = $1 AND normalized_identifier = $2',
+      [voter_type, normalizedId]
+    );
+
+    if (voterRes.rowCount > 0) {
+      voterId = voterRes.rows[0].id;
+    } else {
+      const newVoter = await db.query(
+        'INSERT INTO voters (full_name, voter_type, normalized_identifier) VALUES ($1, $2, $3) RETURNING id',
+        [resolvedName, voter_type, normalizedId]
+      );
+      voterId = newVoter.rows[0].id;
+    }
+
+    const voteVal = vote === 'no' ? 'no' : 'yes';
+
+    await db.query(`
+      INSERT INTO live_massive_votes (voter_id, participant_id, vote_value)
+      VALUES ($1, $2, $3)
+      ON CONFLICT (voter_id, participant_id)
+      DO UPDATE SET vote_value = EXCLUDED.vote_value, updated_at = CURRENT_TIMESTAMP
+    `, [voterId, participant_id, voteVal]);
+
+    // Recalculate tally for this participant in massive voting
+    const countRes = await db.query(`
+      SELECT 
+        COUNT(*) FILTER (WHERE vote_value = 'yes') as yes_count,
+        COUNT(*) FILTER (WHERE vote_value = 'no') as no_count,
+        COUNT(*) as total
+      FROM live_massive_votes
+      WHERE participant_id = $1
+    `, [participant_id]);
+
+    const c = countRes.rows[0];
+    const tally = {
+      participant_id,
+      yes_count: parseInt(c.yes_count || '0', 10),
+      no_count: parseInt(c.no_count || '0', 10),
+      total: parseInt(c.total || '0', 10),
+    };
+
+    broadcastLiveEvent('MASSIVE_VOTE_UPDATED', tally);
+
+    res.json({
+      success: true,
+      participant_id,
+      vote: voteVal,
+      tally,
+    });
+  } catch (err: any) {
+    console.error('[Massive Live Vote Error]:', err);
+    res.status(500).json({ error: 'Error al registrar el voto masivo', details: err.message });
+  }
+}
+
+export async function getMassiveUserVotes(req: Request, res: Response): Promise<void> {
+  try {
+    const { voter_type, institutional_identifier } = req.query;
+    if (!voter_type || !institutional_identifier) {
+      res.json({ votes: {} });
+      return;
+    }
+
+    const normalizedId = normalizeIdentifier(String(institutional_identifier));
+    const db = await getDb();
+
+    const voterRes = await db.query(
+      'SELECT id FROM voters WHERE voter_type = $1 AND normalized_identifier = $2',
+      [voter_type, normalizedId]
+    );
+
+    if (voterRes.rowCount === 0) {
+      res.json({ votes: {} });
+      return;
+    }
+
+    const voterId = voterRes.rows[0].id;
+    const votesRes = await db.query(
+      'SELECT participant_id, vote_value FROM live_massive_votes WHERE voter_id = $1',
+      [voterId]
+    );
+
+    const votesMap: Record<number, string> = {};
+    for (const r of votesRes.rows) {
+      votesMap[r.participant_id] = r.vote_value;
+    }
+
+    res.json({ votes: votesMap });
+  } catch (err: any) {
+    res.status(500).json({ error: 'Error al obtener votos del usuario', details: err.message });
   }
 }

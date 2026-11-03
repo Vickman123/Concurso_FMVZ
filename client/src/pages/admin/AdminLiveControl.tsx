@@ -14,6 +14,12 @@ import {
   Clock,
   ThumbsUp,
   Search,
+  Download,
+  FileSpreadsheet,
+  Layers,
+  ArrowUpDown,
+  CheckCircle2,
+  BarChart3,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { getApiUrl, getEventSourceUrl } from '../../services/api';
@@ -23,23 +29,30 @@ interface LiveParticipant {
   contest_number: number;
   public_display_name: string;
   costume_title: string;
+  description?: string;
+  participant_type?: string;
   photo_thumbnail_key?: string;
   photo_original_key: string;
   live_yes_votes?: number;
   web_votes?: number;
+  massive_yes_votes?: number;
+  total_live_combined?: number;
   total_votes?: number;
 }
 
 interface LiveState {
   is_active?: boolean;
+  is_massive_active?: boolean;
   stage_status: 'waiting' | 'presenting' | 'voting_open' | 'voting_closed' | 'podium';
   current_participant_id: number | null;
   current_participant: any;
   voting_seconds_left: number;
   total_cheers: number;
   current_votes: { yes_count: number; no_count: number; total: number };
+  total_voters_registered: number;
   participants: LiveParticipant[];
   connected_clients: number;
+  updated_at: string;
 }
 
 export const AdminLiveControl: React.FC = () => {
@@ -47,6 +60,8 @@ export const AdminLiveControl: React.FC = () => {
   const [state, setState] = useState<LiveState | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [searchTerm, setSearchTerm] = useState<string>('');
+  const [tableSearch, setTableSearch] = useState<string>('');
+  const [tableSort, setTableSort] = useState<'live_combined' | 'massive' | 'live_stage' | 'contest_number' | 'web'>('live_combined');
   const [actionLoading, setActionLoading] = useState<boolean>(false);
   const [votingDuration, setVotingDuration] = useState<number>(30);
 
@@ -94,6 +109,11 @@ export const AdminLiveControl: React.FC = () => {
       } catch {}
     });
 
+    eventSource.addEventListener('MASSIVE_VOTE_UPDATED', () => {
+      // Refresh state to update tallies across participants
+      fetchState();
+    });
+
     const interval = setInterval(fetchState, 3000);
 
     return () => {
@@ -126,15 +146,56 @@ export const AdminLiveControl: React.FC = () => {
     }
   };
 
+  // Export independent live votes table as CSV
+  const exportBreakdownCSV = () => {
+    if (!state?.participants) return;
+    const headers = [
+      'Numero_Concurso',
+      'Titulo_Disfraz',
+      'Participante',
+      'Votos_Pasarela_1a1',
+      'Votos_Votacion_Masiva',
+      'Total_En_Vivo_Combinado',
+      'Votos_Web_Galeria',
+      'Gran_Total',
+    ];
+    const rows = state.participants.map((p) => [
+      `"${p.contest_number}"`,
+      `"${(p.costume_title || '').replace(/"/g, '""')}"`,
+      `"${(p.public_display_name || '').replace(/"/g, '""')}"`,
+      p.live_yes_votes || 0,
+      p.massive_yes_votes || 0,
+      p.total_live_combined || ((p.live_yes_votes || 0) + (p.massive_yes_votes || 0)),
+      p.web_votes || 0,
+      p.total_votes || 0,
+    ]);
+
+    const csvContent = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
+    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `concurso_fmvz_desglose_votos_en_vivo_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   if (loading || !state) {
     return (
-      <div className="flex items-center justify-center p-12 text-halloween-muted">
-        Cargando consola del escenario...
+      <div className="flex items-center justify-center min-h-[500px]">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-10 h-10 border-4 border-halloween-orange border-t-transparent rounded-full animate-spin" />
+          <span className="text-sm font-display text-halloween-muted">
+            Cargando centro de control de pasarela en vivo...
+          </span>
+        </div>
       </div>
     );
   }
 
   const current = state.current_participant;
+
   const filteredParticipants = state.participants.filter(
     (p) =>
       p.costume_title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -142,86 +203,150 @@ export const AdminLiveControl: React.FC = () => {
       String(p.contest_number).includes(searchTerm)
   );
 
+  // Sorted and filtered participants for the independent votes table
+  const tableParticipants = state.participants
+    .filter(
+      (p) =>
+        p.costume_title.toLowerCase().includes(tableSearch.toLowerCase()) ||
+        p.public_display_name.toLowerCase().includes(tableSearch.toLowerCase()) ||
+        String(p.contest_number).includes(tableSearch)
+    )
+    .sort((a, b) => {
+      if (tableSort === 'live_combined') {
+        const aVal = a.total_live_combined ?? ((a.live_yes_votes || 0) + (a.massive_yes_votes || 0));
+        const bVal = b.total_live_combined ?? ((b.live_yes_votes || 0) + (b.massive_yes_votes || 0));
+        if (bVal !== aVal) return bVal - aVal;
+        return a.contest_number - b.contest_number;
+      }
+      if (tableSort === 'massive') {
+        const aVal = a.massive_yes_votes || 0;
+        const bVal = b.massive_yes_votes || 0;
+        if (bVal !== aVal) return bVal - aVal;
+        return a.contest_number - b.contest_number;
+      }
+      if (tableSort === 'live_stage') {
+        const aVal = a.live_yes_votes || 0;
+        const bVal = b.live_yes_votes || 0;
+        if (bVal !== aVal) return bVal - aVal;
+        return a.contest_number - b.contest_number;
+      }
+      if (tableSort === 'web') {
+        const aVal = a.web_votes || 0;
+        const bVal = b.web_votes || 0;
+        if (bVal !== aVal) return bVal - aVal;
+        return a.contest_number - b.contest_number;
+      }
+      // contest_number
+      return a.contest_number - b.contest_number;
+    });
+
+  // Calculate live totals
+  const totalPasarelaVotes = state.participants.reduce((acc, p) => acc + (p.live_yes_votes || 0), 0);
+  const totalMassiveVotes = state.participants.reduce((acc, p) => acc + (p.massive_yes_votes || 0), 0);
+  const totalLiveCombinedVotes = totalPasarelaVotes + totalMassiveVotes;
+
   return (
-    <div className="space-y-6 max-w-7xl mx-auto">
+    <div className="space-y-6 max-w-7xl mx-auto pb-12">
       {/* Header bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 glass-panel p-6 rounded-3xl border border-halloween-border">
         <div>
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-600/20 border border-red-500/40 text-red-400 text-xs font-black uppercase tracking-wider mb-2">
-            <Radio className="w-3.5 h-3.5" />
-            <span>Consola de Transmisión en Vivo</span>
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-halloween-orange/20 text-halloween-orange flex items-center justify-center border border-halloween-orange/40">
+              <Radio className="w-5 h-5 animate-pulse" />
+            </div>
+            <div>
+              <h1 className="font-display font-black text-2xl text-white tracking-wide">
+                Control de Pasarela y Votación en Vivo
+              </h1>
+              <p className="text-xs text-halloween-muted">
+                Auditorio FMVZ · Proyector de escenario y control de votos en tiempo real
+              </p>
+            </div>
           </div>
-          <h1 className="font-display font-black text-2xl sm:text-3xl text-white">
-            Control del Escenario y Votación Sincrónica
-          </h1>
-          <p className="text-xs text-halloween-muted mt-1">
-            Mueve los participantes en tiempo real, abre periodos de votación sincronizados y proyecta los resultados en vivo.
-          </p>
         </div>
 
-        {/* Projector Open Button */}
-        <a
-          href="/en-vivo"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-2 px-5 py-3 rounded-2xl font-bold text-xs sm:text-sm text-white bg-gradient-to-r from-halloween-purple to-purple-800 hover:from-halloween-purple-dark hover:to-halloween-purple shadow-glow-purple transition-all"
-        >
-          <ExternalLink className="w-4 h-4" />
-          <span>Abrir Pantalla de Proyección (Visor)</span>
-        </a>
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* Master Stage Toggle */}
+          <button
+            onClick={() => sendControlAction({ action: 'TOGGLE_LIVE', is_active: !state.is_active })}
+            disabled={actionLoading}
+            className={`px-4 py-2.5 rounded-xl font-bold text-xs transition-all flex items-center gap-2 cursor-pointer ${
+              state.is_active
+                ? 'bg-emerald-600/20 text-emerald-300 border border-emerald-500/50 hover:bg-emerald-600/30'
+                : 'bg-red-600/20 text-red-400 border border-red-500/50 hover:bg-red-600/30'
+            }`}
+          >
+            <span className={`w-2 h-2 rounded-full ${state.is_active ? 'bg-emerald-400 animate-ping' : 'bg-red-400'}`} />
+            <span>{state.is_active ? 'Escenario: ACTIVO' : 'Escenario: PAUSADO'}</span>
+          </button>
+
+          {/* Link to Auditorio Projector Screen */}
+          <a
+            href="/en-vivo?view=projector"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="px-4 py-2.5 rounded-xl font-bold text-xs text-white bg-gradient-to-r from-halloween-orange to-amber-600 hover:from-halloween-orange-dark hover:to-halloween-orange shadow-glow-orange flex items-center gap-2 transition-all cursor-pointer"
+          >
+            <span>Abrir Pantalla de Proyección</span>
+            <ExternalLink className="w-4 h-4" />
+          </a>
+        </div>
       </div>
 
-      {/* Master Public Visibility & Activation Control */}
-      <div
-        className={`p-5 rounded-3xl border transition-all ${
-          state.is_active
-            ? 'bg-emerald-950/30 border-emerald-500/50 shadow-glow-orange'
-            : 'bg-[#15182A] border-halloween-border/90'
-        }`}
-      >
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex items-start gap-3">
-            <div
-              className={`p-3 rounded-2xl flex-shrink-0 ${
-                state.is_active ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/10 text-red-400'
-              }`}
-            >
-              <Radio className={`w-6 h-6 ${state.is_active ? 'animate-pulse' : ''}`} />
+      {/* Massive Voting Controller Card (Manual Open/Close) */}
+      <div className={`p-6 rounded-3xl border transition-all ${
+        state.is_massive_active
+          ? 'bg-gradient-to-r from-emerald-950/70 via-purple-950/60 to-emerald-950/70 border-emerald-500 shadow-[0_0_35px_rgba(16,185,129,0.35)] animate-pulse'
+          : 'glass-panel border-halloween-purple/40 shadow-glow-purple'
+      }`}>
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="flex items-start gap-4">
+            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center font-bold text-xl flex-shrink-0 ${
+              state.is_massive_active
+                ? 'bg-emerald-500/30 text-emerald-300 border border-emerald-400'
+                : 'bg-purple-900/30 text-purple-300 border border-purple-500/30'
+            }`}>
+              ⚡
             </div>
-            <div className="space-y-1">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="font-display font-bold text-base text-white">
-                  Visibilidad Pública del Escenario:
-                </span>
-                <span
-                  className={`px-2.5 py-0.5 rounded-full text-xs font-black uppercase ${
-                    state.is_active
-                      ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
-                      : 'bg-red-500/20 text-red-400 border border-red-500/40'
-                  }`}
-                >
-                  {state.is_active ? '🟢 ACTIVO Y VISIBLE AL PÚBLICO' : '🔴 INACTIVO (OCULTO AL PÚBLICO)'}
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <h3 className="font-display font-black text-lg text-white">
+                  Votación Masiva en Vivo (Todos los Disfraces)
+                </h3>
+                <span className={`text-[10px] font-bold uppercase px-2.5 py-0.5 rounded-full ${
+                  state.is_massive_active
+                    ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/50'
+                    : 'bg-gray-800 text-gray-400 border border-gray-700'
+                }`}>
+                  {state.is_massive_active ? '● ABIERTA (Público votando en celulares)' : '○ CERRADA'}
                 </span>
               </div>
-              <p className="text-xs text-halloween-muted max-w-2xl leading-relaxed">
-                {state.is_active
-                  ? 'El Escenario en Vivo se encuentra activo y visible en la barra de navegación. Los asistentes pueden votar en tiempo real.'
-                  : 'El Escenario en Vivo está reservado para el 3 de noviembre de 2026. Permanece oculto en el menú principal y formularios hasta que lo actives aquí.'}
+              <p className="text-xs text-halloween-muted mt-1 max-w-xl">
+                Al activar la votación masiva, el público en <span className="text-halloween-orange font-mono">/votar/en-vivo</span> podrá ver a <strong>todos los participantes</strong> tipo Tinder para dar voto o pasar por cada uno. Tú abres y cierras la votación manualmente aquí.
               </p>
             </div>
           </div>
 
           <button
-            onClick={() => sendControlAction({ action: 'TOGGLE_LIVE_ACTIVE', is_active: !state.is_active })}
+            onClick={() => sendControlAction({ action: 'TOGGLE_MASSIVE_VOTING', is_massive_active: !state.is_massive_active })}
             disabled={actionLoading}
-            className={`px-5 py-3 rounded-2xl font-bold text-xs sm:text-sm text-white shadow-md transition-all flex items-center justify-center gap-2 flex-shrink-0 ${
-              state.is_active
-                ? 'bg-red-600 hover:bg-red-700 shadow-glow-orange'
-                : 'bg-gradient-to-r from-emerald-600 to-emerald-500 hover:brightness-110 shadow-glow-purple'
+            className={`px-6 py-3.5 rounded-2xl font-display font-black text-sm text-white shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer flex-shrink-0 ${
+              state.is_massive_active
+                ? 'bg-red-600 hover:bg-red-700 shadow-[0_0_20px_rgba(239,68,68,0.5)]'
+                : 'bg-gradient-to-r from-emerald-600 via-teal-500 to-emerald-600 hover:brightness-110 shadow-[0_0_25px_rgba(16,185,129,0.4)]'
             }`}
           >
-            <Radio className="w-4 h-4" />
-            <span>{state.is_active ? 'Desactivar Escenario (Ocultar)' : 'Activar Escenario en Vivo'}</span>
+            {state.is_massive_active ? (
+              <>
+                <Square className="w-5 h-5" />
+                <span>CERRAR VOTACIÓN MASIVA</span>
+              </>
+            ) : (
+              <>
+                <Play className="w-5 h-5" />
+                <span>ABRIR VOTACIÓN MASIVA</span>
+              </>
+            )}
           </button>
         </div>
       </div>
@@ -229,13 +354,13 @@ export const AdminLiveControl: React.FC = () => {
       {/* Live Stage Status Dashboard */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Main Stage Card */}
-        <div className="lg:col-span-8 glass-panel rounded-3xl p-6 border border-halloween-purple/50 shadow-glow-purple space-y-6">
-          <div className="flex items-center justify-between border-b border-halloween-border/60 pb-4">
-            <div className="flex items-center gap-3">
+        <div className="lg:col-span-8 glass-panel rounded-3xl p-6 border border-halloween-border space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-halloween-border/60 pb-4">
+            <div className="flex items-center gap-2">
               <span
-                className={`w-3 h-3 rounded-full animate-ping ${
+                className={`w-3 h-3 rounded-full ${
                   state.stage_status === 'voting_open'
-                    ? 'bg-emerald-400'
+                    ? 'bg-emerald-400 animate-ping'
                     : state.stage_status === 'presenting'
                     ? 'bg-halloween-orange'
                     : 'bg-gray-400'
@@ -373,7 +498,7 @@ export const AdminLiveControl: React.FC = () => {
               </div>
             </div>
 
-            {/* In-flight Active Timer Controller (if voting is running) */}
+            {/* In-flight Active Timer Controller */}
             {state.stage_status === 'voting_open' && (
               <div className="p-4 rounded-2xl bg-amber-950/40 border-2 border-amber-500/70 shadow-glow-orange flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-pulse">
                 <div className="flex items-center gap-3">
@@ -392,40 +517,35 @@ export const AdminLiveControl: React.FC = () => {
 
                 <div className="flex items-center gap-2">
                   <button
-                    type="button"
-                    onClick={() => sendControlAction({ action: 'ADJUST_TIMER', delta: 10 })}
+                    onClick={() => sendControlAction({ action: 'EXTEND_TIME', seconds: 15 })}
                     disabled={actionLoading}
-                    className="px-3.5 py-2 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm flex items-center gap-1 cursor-pointer"
+                    className="px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-500 text-black hover:bg-amber-400 transition-colors cursor-pointer"
                   >
-                    <span>+10s</span>
+                    +15s
                   </button>
                   <button
-                    type="button"
-                    onClick={() => sendControlAction({ action: 'ADJUST_TIMER', delta: -10 })}
+                    onClick={() => sendControlAction({ action: 'EXTEND_TIME', seconds: 30 })}
                     disabled={actionLoading}
-                    className="px-3.5 py-2 rounded-xl text-xs font-bold bg-amber-600 hover:bg-amber-500 text-white shadow-sm flex items-center gap-1 cursor-pointer"
+                    className="px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-500 text-black hover:bg-amber-400 transition-colors cursor-pointer"
                   >
-                    <span>-10s</span>
+                    +30s
                   </button>
                   <button
-                    type="button"
-                    onClick={() => sendControlAction({ action: 'CLOSE_VOTING' })}
+                    onClick={() => sendControlAction({ action: 'EXTEND_TIME', seconds: -10 })}
                     disabled={actionLoading}
-                    className="px-4 py-2 rounded-xl text-xs font-bold bg-red-600 hover:bg-red-700 text-white shadow-sm flex items-center gap-1 cursor-pointer"
+                    className="px-2.5 py-1.5 rounded-xl text-xs font-bold bg-surface-raised border border-amber-500/50 text-amber-300 hover:text-white transition-colors cursor-pointer"
                   >
-                    <Square className="w-3.5 h-3.5" />
-                    <span>Cerrar Ahora</span>
+                    -10s
                   </button>
                 </div>
               </div>
             )}
 
-            {/* Big Action Controls */}
+            {/* Quick Actions Buttons */}
             <div className="space-y-3">
-              <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider block">
-                Navegación del Escenario
+              <span className="text-xs font-bold text-gray-300 uppercase tracking-wider block">
+                Acciones de Pasarela:
               </span>
-
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <button
                   onClick={() => sendControlAction({ action: 'PREV_PARTICIPANT' })}
@@ -470,7 +590,7 @@ export const AdminLiveControl: React.FC = () => {
               <button
                 onClick={() => sendControlAction({ action: 'SHOW_PODIUM' })}
                 disabled={actionLoading}
-                className="flex-1 py-2.5 px-4 rounded-xl text-xs font-bold bg-amber-500/20 border border-amber-400/50 hover:bg-amber-500/30 text-amber-300 flex items-center justify-center gap-2 transition-all"
+                className="flex-1 py-2.5 px-4 rounded-xl text-xs font-bold bg-amber-500/20 border border-amber-400/50 hover:bg-amber-500/30 text-amber-300 flex items-center justify-center gap-2 transition-all cursor-pointer"
               >
                 <Award className="w-4 h-4" />
                 <span>Mostrar Podio de Ganadores en Pantalla Gigante</span>
@@ -479,7 +599,7 @@ export const AdminLiveControl: React.FC = () => {
               <button
                 onClick={() => sendControlAction({ action: 'RESET_STAGE' })}
                 disabled={actionLoading}
-                className="py-2.5 px-4 rounded-xl text-xs font-medium bg-surface-raised border border-halloween-border hover:text-white text-gray-400 flex items-center justify-center gap-2 transition-all"
+                className="py-2.5 px-4 rounded-xl text-xs font-medium bg-surface-raised border border-halloween-border hover:text-white text-gray-400 flex items-center justify-center gap-2 transition-all cursor-pointer"
                 title="Poner pantalla en espera"
               >
                 <RotateCcw className="w-4 h-4" />
@@ -502,48 +622,278 @@ export const AdminLiveControl: React.FC = () => {
           <div className="space-y-2 max-h-[360px] overflow-y-auto pr-1">
             {[...state.participants]
               .sort((a, b) => {
-                const aCount = Number(a.total_votes ?? a.live_yes_votes ?? 0);
-                const bCount = Number(b.total_votes ?? b.live_yes_votes ?? 0);
-                const diff = bCount - aCount;
+                const aVal = a.total_live_combined ?? ((a.live_yes_votes || 0) + (a.massive_yes_votes || 0));
+                const bVal = b.total_live_combined ?? ((b.live_yes_votes || 0) + (b.massive_yes_votes || 0));
+                const diff = bVal - aVal;
                 if (diff !== 0) return diff;
                 return (a.contest_number || 0) - (b.contest_number || 0);
               })
               .slice(0, 10)
-              .map((p, idx) => (
-                <div
-                  key={p.id}
-                  className={`p-2.5 rounded-xl border flex items-center justify-between text-xs transition-colors ${
-                    p.id === current?.id
-                      ? 'bg-halloween-orange/20 border-halloween-orange text-white'
-                      : 'bg-surface-raised border-halloween-border text-gray-300'
-                  }`}
-                >
-                  <div className="flex items-center gap-2.5 truncate">
-                    <span className="font-mono font-bold text-gray-400 w-4 text-center">
-                      {idx + 1}
-                    </span>
-                    <img
-                      src={p.photo_original_key || p.photo_thumbnail_key}
-                      alt={p.costume_title}
-                      className="w-8 h-8 rounded-lg object-cover flex-shrink-0 bg-black/40"
-                      onError={(e) => {
-                        if (p.photo_original_key && e.currentTarget.src !== p.photo_original_key) {
-                          e.currentTarget.src = p.photo_original_key;
-                        }
-                      }}
-                    />
-                    <div className="truncate">
-                      <strong className="block truncate text-white">{p.costume_title}</strong>
-                      <span className="text-[10px] text-halloween-muted">#{p.contest_number}</span>
+              .map((p, idx) => {
+                const liveTotal = p.total_live_combined ?? ((p.live_yes_votes || 0) + (p.massive_yes_votes || 0));
+                return (
+                  <div
+                    key={p.id}
+                    className={`p-2.5 rounded-xl border flex items-center justify-between text-xs transition-colors ${
+                      p.id === current?.id
+                        ? 'bg-halloween-orange/20 border-halloween-orange text-white'
+                        : 'bg-surface-raised border-halloween-border text-gray-300'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5 truncate">
+                      <span className="font-mono font-bold text-gray-400 w-4 text-center">
+                        {idx + 1}
+                      </span>
+                      <img
+                        src={p.photo_original_key || p.photo_thumbnail_key}
+                        alt={p.costume_title}
+                        className="w-8 h-8 rounded-lg object-cover flex-shrink-0 bg-black/40"
+                        onError={(e) => {
+                          if (p.photo_original_key && e.currentTarget.src !== p.photo_original_key) {
+                            e.currentTarget.src = p.photo_original_key;
+                          }
+                        }}
+                      />
+                      <div className="truncate">
+                        <strong className="block truncate text-white">{p.costume_title}</strong>
+                        <span className="text-[10px] text-halloween-muted">
+                          #{p.contest_number} · {p.public_display_name}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="text-right flex-shrink-0 ml-2">
+                      <span className="font-mono font-black text-emerald-400 block text-xs">
+                        {liveTotal} pts
+                      </span>
+                      <span className="text-[9px] text-gray-400 block font-mono">
+                        P:{p.live_yes_votes || 0} | M:{p.massive_yes_votes || 0}
+                      </span>
                     </div>
                   </div>
-
-                  <span className="font-mono font-bold text-halloween-orange flex-shrink-0 ml-2">
-                    {p.total_votes ?? p.live_yes_votes ?? 0} pts
-                  </span>
-                </div>
-              ))}
+                );
+              })}
           </div>
+        </div>
+      </div>
+
+      {/* ------------------------------------------------------------- */}
+      {/* INDEPENDENT VOTES BREAKDOWN TABLE (STAFF & JURY AUDIT)         */}
+      {/* ------------------------------------------------------------- */}
+      <div className="glass-panel rounded-3xl p-6 border border-emerald-500/40 shadow-[0_0_30px_rgba(16,185,129,0.15)] space-y-5">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-halloween-border/60 pb-4">
+          <div>
+            <div className="flex items-center gap-2">
+              <BarChart3 className="w-5 h-5 text-emerald-400" />
+              <h3 className="font-display font-black text-lg text-white">
+                Tabla Oficial de Votaciones en Vivo (Desglose Pasarela vs Masiva)
+              </h3>
+            </div>
+            <p className="text-xs text-halloween-muted mt-0.5">
+              Conteo independiente en tiempo real para el Staff y Jurado. Valida votos de pasarela 1 a 1 y votos de votación masiva.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2 flex-wrap">
+            <button
+              onClick={exportBreakdownCSV}
+              className="px-4 py-2 rounded-xl bg-emerald-600/20 border border-emerald-500/50 hover:bg-emerald-600/30 text-emerald-300 text-xs font-bold flex items-center gap-2 transition-all cursor-pointer"
+              title="Descargar tabla en formato CSV para Excel"
+            >
+              <Download className="w-4 h-4" />
+              <span>Exportar CSV</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Global Stats Summary Bar */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div className="p-3.5 rounded-2xl bg-[#0B0D1A] border border-halloween-border">
+            <span className="text-[10px] uppercase font-bold text-halloween-muted block">
+              Votos Pasarela 1-a-1
+            </span>
+            <span className="text-xl font-mono font-black text-halloween-orange mt-0.5 block">
+              {totalPasarelaVotes}
+            </span>
+            <span className="text-[10px] text-gray-400">Emitidos durante rondas</span>
+          </div>
+
+          <div className="p-3.5 rounded-2xl bg-[#0B0D1A] border border-emerald-500/40">
+            <span className="text-[10px] uppercase font-bold text-emerald-400 block">
+              Votos Votación Masiva
+            </span>
+            <span className="text-xl font-mono font-black text-emerald-300 mt-0.5 block">
+              {totalMassiveVotes}
+            </span>
+            <span className="text-[10px] text-emerald-200/70">Emitidos en modo masivo</span>
+          </div>
+
+          <div className="p-3.5 rounded-2xl bg-[#0B0D1A] border border-purple-500/40">
+            <span className="text-[10px] uppercase font-bold text-purple-300 block">
+              Total en Vivo Combinado
+            </span>
+            <span className="text-xl font-mono font-black text-purple-200 mt-0.5 block">
+              {totalLiveCombinedVotes}
+            </span>
+            <span className="text-[10px] text-purple-300/70">Pasarela + Masiva</span>
+          </div>
+
+          <div className="p-3.5 rounded-2xl bg-[#0B0D1A] border border-halloween-border">
+            <span className="text-[10px] uppercase font-bold text-gray-400 block">
+              Participantes
+            </span>
+            <span className="text-xl font-mono font-black text-white mt-0.5 block">
+              {state.participants.length}
+            </span>
+            <span className="text-[10px] text-gray-400">Total en competencia</span>
+          </div>
+        </div>
+
+        {/* Filters and Sorting controls */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2">
+          <div className="flex items-center gap-1.5 flex-wrap text-xs">
+            <span className="text-gray-400 font-semibold mr-1">Ordenar por:</span>
+            <button
+              onClick={() => setTableSort('live_combined')}
+              className={`px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer ${
+                tableSort === 'live_combined'
+                  ? 'bg-purple-600 text-white'
+                  : 'bg-surface-raised border border-halloween-border text-gray-400 hover:text-white'
+              }`}
+            >
+              Total en Vivo
+            </button>
+            <button
+              onClick={() => setTableSort('massive')}
+              className={`px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer ${
+                tableSort === 'massive'
+                  ? 'bg-emerald-600 text-white'
+                  : 'bg-surface-raised border border-halloween-border text-gray-400 hover:text-white'
+              }`}
+            >
+              Votación Masiva
+            </button>
+            <button
+              onClick={() => setTableSort('live_stage')}
+              className={`px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer ${
+                tableSort === 'live_stage'
+                  ? 'bg-halloween-orange text-black'
+                  : 'bg-surface-raised border border-halloween-border text-gray-400 hover:text-white'
+              }`}
+            >
+              Pasarela 1-a-1
+            </button>
+            <button
+              onClick={() => setTableSort('contest_number')}
+              className={`px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer ${
+                tableSort === 'contest_number'
+                  ? 'bg-gray-700 text-white'
+                  : 'bg-surface-raised border border-halloween-border text-gray-400 hover:text-white'
+              }`}
+            >
+              # Concurso
+            </button>
+          </div>
+
+          <div className="relative max-w-xs w-full">
+            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-halloween-muted" />
+            <input
+              type="text"
+              placeholder="Filtrar por nombre o #..."
+              value={tableSearch}
+              onChange={(e) => setTableSearch(e.target.value)}
+              className="w-full pl-9 pr-4 py-1.5 rounded-xl bg-surface-raised border border-halloween-border text-xs text-white placeholder-halloween-muted focus:outline-none focus:border-emerald-500"
+            />
+          </div>
+        </div>
+
+        {/* The Table */}
+        <div className="overflow-x-auto rounded-2xl border border-halloween-border">
+          <table className="w-full text-left text-xs">
+            <thead className="bg-[#0B0D1A] text-gray-400 font-mono text-[11px] uppercase tracking-wider border-b border-halloween-border">
+              <tr>
+                <th className="py-3 px-3"># Concurso</th>
+                <th className="py-3 px-3">Disfraz & Concursante</th>
+                <th className="py-3 px-3 text-center">Pasarela 1-a-1</th>
+                <th className="py-3 px-3 text-center">Votación Masiva</th>
+                <th className="py-3 px-3 text-center">Total en Vivo</th>
+                <th className="py-3 px-3 text-center">Web (Galería)</th>
+                <th className="py-3 px-3 text-center">Gran Total</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-halloween-border/40 font-mono">
+              {tableParticipants.map((p) => {
+                const combined = p.total_live_combined ?? ((p.live_yes_votes || 0) + (p.massive_yes_votes || 0));
+                const isCurrent = p.id === current?.id;
+
+                return (
+                  <tr
+                    key={p.id}
+                    className={`hover:bg-[#12162A] transition-colors ${
+                      isCurrent ? 'bg-halloween-orange/10' : ''
+                    }`}
+                  >
+                    <td className="py-2.5 px-3 font-bold text-white whitespace-nowrap">
+                      <span className="px-2 py-0.5 rounded-md bg-black/60 border border-halloween-border text-halloween-orange">
+                        #{String(p.contest_number).padStart(2, '0')}
+                      </span>
+                    </td>
+
+                    <td className="py-2.5 px-3">
+                      <div className="flex items-center gap-2.5 font-sans">
+                        <img
+                          src={p.photo_thumbnail_key || p.photo_original_key}
+                          alt=""
+                          className="w-8 h-8 rounded-lg object-cover flex-shrink-0 bg-black/40"
+                          onError={(e) => {
+                            if (p.photo_original_key && e.currentTarget.src !== p.photo_original_key) {
+                              e.currentTarget.src = p.photo_original_key;
+                            }
+                          }}
+                        />
+                        <div className="truncate max-w-[200px] sm:max-w-xs">
+                          <strong className="block text-white truncate text-xs">
+                            {p.costume_title}
+                          </strong>
+                          <span className="text-[10px] text-halloween-muted block truncate">
+                            {p.public_display_name}
+                          </span>
+                        </div>
+                      </div>
+                    </td>
+
+                    <td className="py-2.5 px-3 text-center">
+                      <span className="px-2.5 py-1 rounded-lg bg-orange-950/40 border border-orange-500/40 text-halloween-orange font-bold text-xs inline-block min-w-[36px]">
+                        {p.live_yes_votes || 0}
+                      </span>
+                    </td>
+
+                    <td className="py-2.5 px-3 text-center">
+                      <span className="px-2.5 py-1 rounded-lg bg-emerald-950/40 border border-emerald-500/50 text-emerald-300 font-bold text-xs inline-block min-w-[36px]">
+                        {p.massive_yes_votes || 0}
+                      </span>
+                    </td>
+
+                    <td className="py-2.5 px-3 text-center">
+                      <span className="px-3 py-1 rounded-xl bg-purple-900/40 border border-purple-400/50 text-purple-200 font-black text-xs inline-block min-w-[42px] shadow-sm">
+                        {combined}
+                      </span>
+                    </td>
+
+                    <td className="py-2.5 px-3 text-center text-gray-400">
+                      <span className="text-xs">{p.web_votes || 0}</span>
+                    </td>
+
+                    <td className="py-2.5 px-3 text-center">
+                      <span className="font-black text-amber-400 text-xs">
+                        {p.total_votes || 0}
+                      </span>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
       </div>
 
@@ -552,10 +902,10 @@ export const AdminLiveControl: React.FC = () => {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
             <h3 className="font-display font-bold text-lg text-white">
-              Todos los Participantes ({state.participants.length})
+              Subir Concursante al Escenario ({state.participants.length})
             </h3>
             <p className="text-xs text-halloween-muted">
-              Haz clic en "Subir al Escenario" para poner a cualquier concursante en el proyector de inmediato.
+              Haz clic en "Subir" para poner a cualquier concursante en el proyector de inmediato.
             </p>
           </div>
 
@@ -609,7 +959,7 @@ export const AdminLiveControl: React.FC = () => {
                   <button
                     onClick={() => sendControlAction({ action: 'SET_PARTICIPANT', participant_id: p.id })}
                     disabled={isCurrent || actionLoading}
-                    className={`w-full py-1.5 rounded-lg text-[11px] font-bold transition-all ${
+                    className={`w-full py-1.5 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
                       isCurrent
                         ? 'bg-halloween-orange text-black'
                         : 'bg-[#15182A] border border-halloween-border text-gray-300 hover:text-white hover:border-halloween-orange'
