@@ -31,6 +31,7 @@ if (fs.existsSync(gatewayEnvPath)) {
 dotenv.config(); // Fallback o variables raíz
 
 const app = express();
+app.set('trust proxy', true);
 
 // Configuración general
 const PORT = process.env.PORT || 3000;
@@ -134,10 +135,14 @@ app.use((req, res, next) => {
 // 4. Limitación de Tasa (Rate Limiting)
 const generalLimiter = rateLimit({
   windowMs: 60 * 1000, // 1 minuto
-  max: 150, // 150 peticiones por minuto por IP
+  max: 2000, // Ampliado a 2000 peticiones/min para redes universitarias compartidas
   standardHeaders: true,
   legacyHeaders: false,
-  skip: (req) => Boolean(GATEWAY_SECRET && req.headers['x-bypass-ratelimit'] === GATEWAY_SECRET),
+  skip: (req) => {
+    // Excluir panel de administración y peticiones autorizadas
+    if (req.originalUrl && req.originalUrl.includes('/api/admin')) return true;
+    return Boolean(GATEWAY_SECRET && req.headers['x-bypass-ratelimit'] === GATEWAY_SECRET);
+  },
   message: { error: 'Demasiadas solicitudes al gateway. Por favor, intente de nuevo en un minuto.' },
 });
 
