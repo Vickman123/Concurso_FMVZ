@@ -14,15 +14,12 @@ import {
   User,
   Tv,
   ArrowRight,
-  Smile,
-  ChevronLeft,
-  ChevronRight,
-  Grid,
+  Search,
   Heart,
-  RotateCcw,
   Check,
   Eye,
-  SlidersHorizontal,
+  X,
+  Filter,
 } from 'lucide-react';
 import { EventLogo } from '../components/EventLogo';
 import { getApiUrl, getEventSourceUrl } from '../services/api';
@@ -57,7 +54,7 @@ export const LiveVoter: React.FC = () => {
     }
   });
 
-  // Login form state if not identified (only community type and account number)
+  // Login form state if not identified
   const [voterType, setVoterType] = useState<'student' | 'worker'>('student');
   const [idNumber, setIdNumber] = useState('');
   const [authError, setAuthError] = useState<string | null>(null);
@@ -73,21 +70,55 @@ export const LiveVoter: React.FC = () => {
   const [reactionFeedback, setReactionFeedback] = useState<string | null>(null);
   const [justJoined, setJustJoined] = useState<boolean>(false);
 
-  // Massive Live Voting State (Tinder-style for all participants)
+  // Massive Live Voting State (Agile Mosaic / Gallery Mode)
   const [isMassiveActive, setIsMassiveActive] = useState<boolean>(false);
   const [allParticipants, setAllParticipants] = useState<LiveParticipant[]>([]);
   const [massiveVotes, setMassiveVotes] = useState<Record<number, 'yes' | 'no'>>({});
-  const [massiveIndex, setMassiveIndex] = useState<number>(0);
-  const [massiveLoading, setMassiveLoading] = useState<boolean>(false);
-  const [showQuickGrid, setShowQuickGrid] = useState<boolean>(false);
-  const [massiveSuccessFeedback, setMassiveSuccessFeedback] = useState<string | null>(null);
+  const [massiveSearch, setMassiveSearch] = useState<string>('');
+  const [massiveCategoryFilter, setMassiveCategoryFilter] = useState<'all' | 'my_votes' | 'student' | 'worker'>('all');
+  const [selectedPreview, setSelectedPreview] = useState<LiveParticipant | null>(null);
 
-  // Approved participants list for massive voting
+  // Filter approved participants
   const massiveList = useMemo(() => {
     const approved = allParticipants.filter((p) => p.status === 'approved');
     if (approved.length > 0) return approved;
     return allParticipants;
   }, [allParticipants]);
+
+  // Filtered participants based on search and category tab
+  const displayedMassiveList = useMemo(() => {
+    return massiveList.filter((p) => {
+      // Category tab filter
+      if (massiveCategoryFilter === 'my_votes' && massiveVotes[p.id] !== 'yes') {
+        return false;
+      }
+      if (massiveCategoryFilter === 'student' && p.participant_type !== 'student') {
+        return false;
+      }
+      if (massiveCategoryFilter === 'worker' && p.participant_type !== 'worker') {
+        return false;
+      }
+
+      // Search term filter
+      if (!massiveSearch.trim()) return true;
+      const term = massiveSearch.toLowerCase().trim();
+      return (
+        p.costume_title.toLowerCase().includes(term) ||
+        p.public_display_name.toLowerCase().includes(term) ||
+        String(p.contest_number).includes(term) ||
+        `#${p.contest_number}`.includes(term)
+      );
+    });
+  }, [massiveList, massiveSearch, massiveCategoryFilter, massiveVotes]);
+
+  // Total count of user's voted YES
+  const votedYesCount = useMemo(() => {
+    let count = 0;
+    for (const p of massiveList) {
+      if (massiveVotes[p.id] === 'yes') count++;
+    }
+    return count;
+  }, [massiveList, massiveVotes]);
 
   // Fetch state snapshot & SSE stream
   useEffect(() => {
@@ -269,35 +300,29 @@ export const LiveVoter: React.FC = () => {
     }
   };
 
-  // Cast vote in Massive Voting Mode (Tinder-style)
-  const handleMassiveVote = async (participantId: number, value: 'yes' | 'no') => {
-    if (!voter || massiveLoading) return;
+  // Ultra-Agile Toggle Vote in Massive Mosaic Mode
+  const handleToggleMassiveVote = async (participantId: number) => {
+    if (!voter) return;
 
-    setMassiveLoading(true);
+    const currentVote = massiveVotes[participantId];
+    const newVote: 'yes' | 'no' = currentVote === 'yes' ? 'no' : 'yes';
 
-    // Optimistic state update
-    setMassiveVotes((prev) => ({ ...prev, [participantId]: value }));
+    // Instant optimistic update
+    setMassiveVotes((prev) => ({ ...prev, [participantId]: newVote }));
 
-    if (value === 'yes') {
+    if (newVote === 'yes') {
       if (navigator.vibrate) {
-        navigator.vibrate(50);
+        navigator.vibrate(45);
       }
       try {
         confetti({
-          particleCount: 35,
-          spread: 60,
+          particleCount: 30,
+          spread: 50,
           origin: { y: 0.7 },
           colors: ['#10B981', '#FF7417', '#8B5CF6'],
         });
       } catch {}
-      setMassiveSuccessFeedback('💚 ¡Voto a favor registrado!');
-    } else {
-      setMassiveSuccessFeedback('⚪ Disfraz pasado (sin voto)');
     }
-
-    setTimeout(() => {
-      setMassiveSuccessFeedback(null);
-    }, 1200);
 
     try {
       await fetch(getApiUrl('/api/live/massive-vote'), {
@@ -308,17 +333,11 @@ export const LiveVoter: React.FC = () => {
           institutional_identifier: voter.institutional_identifier,
           full_name: voter.full_name,
           participant_id: participantId,
-          vote: value,
+          vote: newVote,
         }),
       });
     } catch {
-      // silent fallback
-    } finally {
-      setMassiveLoading(false);
-      // Auto advance to next card after decision
-      setTimeout(() => {
-        setMassiveIndex((prev) => Math.min(massiveList.length - 1, prev + 1));
-      }, 250);
+      // silent retry
     }
   };
 
@@ -436,38 +455,22 @@ export const LiveVoter: React.FC = () => {
   }
 
   // -------------------------------------------------------------
-  // 2. MASSIVE VOTING MODE (Tinder-Style Experience)
+  // 2. MASSIVE VOTING MODE (Agile Mosaic / Gallery Grid)
   // -------------------------------------------------------------
   if (isMassiveActive) {
-    const currentCard = massiveList[massiveIndex];
     const totalMassive = massiveList.length;
 
-    // Calculate user progress
-    let yesCount = 0;
-    let noCount = 0;
-    for (const p of massiveList) {
-      if (massiveVotes[p.id] === 'yes') yesCount++;
-      else if (massiveVotes[p.id] === 'no') noCount++;
-    }
-    const reviewedCount = yesCount + noCount;
-    const progressPercent = totalMassive > 0 ? Math.round((reviewedCount / totalMassive) * 100) : 0;
-    const currentCardVote = currentCard ? massiveVotes[currentCard.id] : null;
-
     return (
-      <div className="min-h-screen bg-[#080A12] text-halloween-white flex flex-col justify-between max-w-md mx-auto relative select-none">
-        {/* Top Header */}
+      <div className="min-h-screen bg-[#080A12] text-halloween-white flex flex-col justify-between max-w-4xl mx-auto relative select-none pb-24">
+        {/* Top Sticky Header */}
         <header className="p-3.5 border-b border-emerald-500/40 bg-[#0A0D1B]/95 backdrop-blur-md flex items-center justify-between sticky top-0 z-30">
           <EventLogo size="sm" className="scale-85 origin-left" />
 
           <div className="flex items-center gap-2">
-            <button
-              onClick={() => setShowQuickGrid(true)}
-              className="px-2.5 py-1 rounded-lg bg-emerald-950/60 border border-emerald-500/50 text-emerald-300 hover:text-white flex items-center gap-1.5 text-[11px] font-bold cursor-pointer"
-              title="Ver cuadrícula de todos los disfraces"
-            >
-              <Grid className="w-3.5 h-3.5" />
-              <span>Lista ({reviewedCount}/{totalMassive})</span>
-            </button>
+            <div className="px-3 py-1 rounded-full bg-emerald-950/70 border border-emerald-500/60 text-emerald-300 font-mono font-bold text-xs flex items-center gap-1.5 shadow-sm">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span>💚 {votedYesCount} Votos SÍ</span>
+            </div>
 
             <div className="px-2.5 py-1 rounded-full bg-surface-raised border border-halloween-border text-[11px] text-gray-300 flex items-center gap-1.5 font-mono">
               <User className="w-3 h-3 text-halloween-orange" />
@@ -487,304 +490,315 @@ export const LiveVoter: React.FC = () => {
           </div>
         </header>
 
-        {/* Massive Mode Glowing Alert Banner */}
-        <div className="px-4 pt-3 pb-1">
-          <div className="p-2.5 rounded-2xl bg-gradient-to-r from-emerald-950/80 via-teal-950/70 to-emerald-950/80 border border-emerald-500/60 shadow-[0_0_20px_rgba(16,185,129,0.25)] flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-lg bg-emerald-500/30 text-emerald-300 flex items-center justify-center font-bold text-xs animate-pulse">
+        {/* Massive Mode Alert & Quick Instructions */}
+        <div className="p-4 space-y-3">
+          <div className="p-3 rounded-2xl bg-gradient-to-r from-emerald-950/80 via-teal-950/70 to-emerald-950/80 border border-emerald-500/60 shadow-[0_0_25px_rgba(16,185,129,0.2)] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-xl bg-emerald-500/30 text-emerald-300 flex items-center justify-center font-bold text-sm flex-shrink-0 animate-pulse">
                 ⚡
               </div>
               <div>
-                <span className="text-[11px] font-black uppercase text-emerald-300 tracking-wider block">
-                  Votación Masiva Abierta
-                </span>
-                <span className="text-[10px] text-emerald-200/80">
-                  Vota libremente a favor de los que más te gusten.
-                </span>
+                <h2 className="text-xs font-black uppercase text-emerald-300 tracking-wider">
+                  Votación Masiva Abierta · Galería de Voto Rápido
+                </h2>
+                <p className="text-[11px] text-emerald-200/80">
+                  Explora todos los disfraces o busca el tuyo. Toca <strong>"VOTAR A FAVOR"</strong> en todos los que quieras apoyar.
+                </p>
               </div>
             </div>
 
-            <div className="text-right">
-              <span className="text-xs font-mono font-black text-emerald-300">
-                💚 {yesCount} votos SÍ
+            <div className="flex items-center gap-2 self-end sm:self-auto flex-shrink-0 font-mono text-xs">
+              <span className="text-gray-300">
+                Has votado por: <strong className="text-emerald-300 text-sm">{votedYesCount}</strong> de {totalMassive}
               </span>
             </div>
           </div>
 
-          {/* Progress Bar */}
-          <div className="mt-2.5 space-y-1">
-            <div className="flex items-center justify-between text-[10px] font-mono text-gray-400">
-              <span>Progreso: {reviewedCount} de {totalMassive} revisados ({progressPercent}%)</span>
-              <span className="text-emerald-400 font-bold">Disfraz #{currentCard?.contest_number || massiveIndex + 1}</span>
-            </div>
-            <div className="w-full h-1.5 rounded-full bg-surface-raised overflow-hidden">
-              <div
-                className="h-full bg-gradient-to-r from-emerald-500 to-teal-400 transition-all duration-300"
-                style={{ width: `${progressPercent}%` }}
+          {/* Search Bar & Category Filters for Rapid Agility */}
+          <div className="space-y-2">
+            <div className="relative w-full">
+              <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Buscar por disfraz, participante o número (#01)..."
+                value={massiveSearch}
+                onChange={(e) => setMassiveSearch(e.target.value)}
+                className="w-full pl-10 pr-10 py-3 rounded-2xl bg-surface-card border border-halloween-border text-xs sm:text-sm text-white placeholder-gray-500 focus:outline-none focus:border-emerald-500 transition-colors shadow-inner"
               />
+              {massiveSearch && (
+                <button
+                  type="button"
+                  onClick={() => setMassiveSearch('')}
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white p-1"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+
+            {/* Quick Filter Chips */}
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs no-scrollbar">
+              <button
+                type="button"
+                onClick={() => setMassiveCategoryFilter('all')}
+                className={`px-3 py-1.5 rounded-xl font-bold whitespace-nowrap transition-all cursor-pointer ${
+                  massiveCategoryFilter === 'all'
+                    ? 'bg-emerald-600 text-white shadow-md'
+                    : 'bg-surface-raised border border-halloween-border text-gray-400 hover:text-white'
+                }`}
+              >
+                Todos ({massiveList.length})
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setMassiveCategoryFilter('my_votes')}
+                className={`px-3 py-1.5 rounded-xl font-bold whitespace-nowrap transition-all flex items-center gap-1 cursor-pointer ${
+                  massiveCategoryFilter === 'my_votes'
+                    ? 'bg-purple-600 text-white shadow-md'
+                    : 'bg-surface-raised border border-halloween-border text-gray-400 hover:text-white'
+                }`}
+              >
+                <span>💚 Mis Votos</span>
+                <span className="font-mono text-[11px] px-1.5 py-0.2 rounded-full bg-black/40">
+                  {votedYesCount}
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setMassiveCategoryFilter('student')}
+                className={`px-3 py-1.5 rounded-xl font-bold whitespace-nowrap transition-all cursor-pointer ${
+                  massiveCategoryFilter === 'student'
+                    ? 'bg-halloween-orange text-black'
+                    : 'bg-surface-raised border border-halloween-border text-gray-400 hover:text-white'
+                }`}
+              >
+                🎓 Alumnos
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setMassiveCategoryFilter('worker')}
+                className={`px-3 py-1.5 rounded-xl font-bold whitespace-nowrap transition-all cursor-pointer ${
+                  massiveCategoryFilter === 'worker'
+                    ? 'bg-teal-600 text-white'
+                    : 'bg-surface-raised border border-halloween-border text-gray-400 hover:text-white'
+                }`}
+              >
+                👨‍🏫 Profesores / Personal
+              </button>
             </div>
           </div>
         </div>
 
-        {/* Tinder Card Arena */}
-        <main className="p-4 flex-1 flex flex-col justify-center space-y-3 z-20">
-          {currentCard ? (
-            <div className="space-y-3 animate-fade-in">
-              {/* Costume Card with Dual Layer Display */}
-              <div className={`relative rounded-3xl overflow-hidden border-2 transition-all ${
-                currentCardVote === 'yes'
-                  ? 'border-emerald-500 shadow-[0_0_25px_rgba(16,185,129,0.35)]'
-                  : currentCardVote === 'no'
-                  ? 'border-gray-700 opacity-90'
-                  : 'border-halloween-purple/60 shadow-glow-purple'
-              } bg-[#080A12]`}>
-                <div className="relative w-full h-72 sm:h-80 flex items-center justify-center overflow-hidden">
-                  {/* Ambient Blurred Backdrop */}
-                  <img
-                    src={currentCard.photo_thumbnail_key || currentCard.photo_original_key}
-                    alt=""
-                    aria-hidden="true"
-                    className="absolute inset-0 w-full h-full object-cover blur-2xl opacity-40 scale-110 pointer-events-none"
-                  />
+        {/* The Mosaic / Gallery Grid */}
+        <main className="px-4 flex-1">
+          {displayedMassiveList.length > 0 ? (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4 animate-fade-in">
+              {displayedMassiveList.map((p) => {
+                const isVoted = massiveVotes[p.id] === 'yes';
 
-                  {/* Complete Uncropped Image */}
-                  <img
-                    src={currentCard.photo_original_key}
-                    alt={currentCard.costume_title}
-                    className="relative z-10 max-h-full max-w-full object-contain p-2 drop-shadow-2xl"
-                    onError={(e) => {
-                      if (currentCard.photo_thumbnail_key && e.currentTarget.src !== currentCard.photo_thumbnail_key) {
-                        e.currentTarget.src = currentCard.photo_thumbnail_key;
-                      }
-                    }}
-                  />
+                return (
+                  <div
+                    key={p.id}
+                    className={`rounded-2xl border flex flex-col justify-between overflow-hidden transition-all duration-200 ${
+                      isVoted
+                        ? 'bg-gradient-to-b from-emerald-950/60 to-[#0A0D1B] border-emerald-500 shadow-[0_0_20px_rgba(16,185,129,0.35)] scale-[1.01]'
+                        : 'bg-surface-card border-halloween-border hover:border-gray-500'
+                    }`}
+                  >
+                    {/* Costume Image Container */}
+                    <div
+                      onClick={() => setSelectedPreview(p)}
+                      className="relative aspect-square w-full overflow-hidden bg-[#080A12] flex items-center justify-center cursor-pointer group"
+                      title="Toca para ver en grande"
+                    >
+                      {/* Ambient Blurred Background */}
+                      <img
+                        src={p.photo_thumbnail_key || p.photo_original_key}
+                        alt=""
+                        aria-hidden="true"
+                        className="absolute inset-0 w-full h-full object-cover blur-md opacity-40 scale-110 pointer-events-none"
+                      />
 
-                  {/* Soft Bottom Vignette */}
-                  <div className="absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-[#080A12]/95 via-[#080A12]/60 to-transparent z-15 pointer-events-none" />
+                      {/* Complete Crisp Image */}
+                      <img
+                        src={p.photo_original_key}
+                        alt={p.costume_title}
+                        className="relative z-10 max-h-full max-w-full object-contain p-1.5 transition-transform duration-300 group-hover:scale-105"
+                        onError={(e) => {
+                          if (p.photo_thumbnail_key && e.currentTarget.src !== p.photo_thumbnail_key) {
+                            e.currentTarget.src = p.photo_thumbnail_key;
+                          }
+                        }}
+                      />
 
-                  {/* Top Badges */}
-                  <div className="absolute top-3 left-3 z-20 px-3 py-1 rounded-xl bg-black/85 border border-halloween-orange/60 text-white font-mono font-black text-sm backdrop-blur-md">
-                    #{String(currentCard.contest_number).padStart(2, '0')}
+                      {/* Soft Bottom Vignette */}
+                      <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-[#080A12]/95 via-[#080A12]/40 to-transparent z-15 pointer-events-none" />
+
+                      {/* Contest # Badge */}
+                      <span className="absolute top-2 left-2 z-20 px-2 py-0.5 rounded-lg bg-black/85 border border-halloween-orange/60 font-mono font-black text-[11px] text-white backdrop-blur-md">
+                        #{String(p.contest_number).padStart(2, '0')}
+                      </span>
+
+                      {/* Voted Star/Check Badge on Image */}
+                      {isVoted && (
+                        <span className="absolute top-2 right-2 z-20 px-2 py-0.5 rounded-lg bg-emerald-600 text-white font-bold text-[10px] flex items-center gap-1 shadow-md animate-bounce">
+                          <Check className="w-3 h-3" />
+                          <span>VOTADO</span>
+                        </span>
+                      )}
+
+                      {/* Zoom hint */}
+                      <span className="absolute bottom-1 right-2 z-20 text-[10px] text-gray-400 group-hover:text-white flex items-center gap-0.5 opacity-80">
+                        <Eye className="w-3 h-3" />
+                      </span>
+                    </div>
+
+                    {/* Costume Info */}
+                    <div className="p-2.5 space-y-1 flex-1 flex flex-col justify-between">
+                      <div>
+                        <strong className="block text-xs font-display font-black text-white leading-tight truncate">
+                          {p.costume_title}
+                        </strong>
+                        <span className="text-[10px] text-halloween-lavender block truncate">
+                          {p.public_display_name}
+                        </span>
+                      </div>
+
+                      {/* Agile One-Click Voting Button */}
+                      <div className="pt-2">
+                        <button
+                          type="button"
+                          onClick={() => handleToggleMassiveVote(p.id)}
+                          className={`w-full py-2.5 px-2 rounded-xl text-xs font-display font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 ${
+                            isVoted
+                              ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-[0_0_15px_rgba(16,185,129,0.5)] border border-emerald-400'
+                              : 'bg-surface-raised hover:bg-emerald-950/60 text-gray-300 hover:text-emerald-300 border border-halloween-border hover:border-emerald-500/60'
+                          }`}
+                        >
+                          {isVoted ? (
+                            <>
+                              <CheckCircle2 className="w-4 h-4 text-emerald-200" />
+                              <span>¡VOTADO SÍ! ✓</span>
+                            </>
+                          ) : (
+                            <>
+                              <ThumbsUp className="w-3.5 h-3.5 text-emerald-400" />
+                              <span>VOTAR A FAVOR</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    </div>
                   </div>
-
-                  <div className="absolute top-3 right-3 z-20 px-2.5 py-1 rounded-lg bg-black/80 border border-halloween-border text-white text-[10px] font-bold uppercase backdrop-blur-md">
-                    {massiveIndex + 1} de {totalMassive}
-                  </div>
-
-                  {/* Costume Title & Name */}
-                  <div className="absolute bottom-3 left-4 right-4 z-20 space-y-0.5">
-                    <h2 className="font-display font-black text-xl text-white leading-tight drop-shadow truncate">
-                      {currentCard.costume_title}
-                    </h2>
-                    <p className="text-xs text-halloween-lavender drop-shadow truncate">
-                      Por {currentCard.public_display_name}
-                    </p>
-                    {currentCard.description && (
-                      <p className="text-[11px] text-gray-300 line-clamp-1 italic">
-                        "{currentCard.description}"
-                      </p>
-                    )}
-                  </div>
-                </div>
-
-                {/* Status Indicator inside Card */}
-                <div className="px-4 py-2 border-t border-halloween-border/40 bg-[#0B0E1E] flex items-center justify-between text-xs">
-                  <span className="text-[11px] text-gray-400">Tu decisión actual:</span>
-                  {currentCardVote === 'yes' ? (
-                    <span className="font-bold text-emerald-400 flex items-center gap-1">
-                      <CheckCircle2 className="w-3.5 h-3.5" />
-                      ¡Votaste a Favor!
-                    </span>
-                  ) : currentCardVote === 'no' ? (
-                    <span className="font-bold text-gray-400 flex items-center gap-1">
-                      <XCircle className="w-3.5 h-3.5" />
-                      Pasaste este disfraz
-                    </span>
-                  ) : (
-                    <span className="text-amber-400/90 font-semibold flex items-center gap-1">
-                      <Clock className="w-3.5 h-3.5" />
-                      Aún sin calificar
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              {/* Success Feedback Flash */}
-              {massiveSuccessFeedback && (
-                <div className="p-2 rounded-xl bg-emerald-950/70 border border-emerald-500 text-center text-xs font-bold text-emerald-300 animate-bounce">
-                  {massiveSuccessFeedback}
-                </div>
-              )}
-
-              {/* Tinder Action Buttons */}
-              <div className="grid grid-cols-2 gap-3 pt-1">
-                <button
-                  type="button"
-                  onClick={() => handleMassiveVote(currentCard.id, 'no')}
-                  disabled={massiveLoading}
-                  className={`py-3.5 px-4 rounded-2xl font-bold text-xs sm:text-sm border transition-all flex items-center justify-center gap-2 cursor-pointer ${
-                    currentCardVote === 'no'
-                      ? 'bg-gray-800 text-white border-gray-600 scale-[0.98]'
-                      : 'bg-surface-raised border-halloween-border hover:border-red-500/50 text-gray-300 hover:text-red-300'
-                  }`}
-                >
-                  <XCircle className="w-5 h-5 text-gray-400" />
-                  <span>Pasar</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => handleMassiveVote(currentCard.id, 'yes')}
-                  disabled={massiveLoading}
-                  className={`py-3.5 px-4 rounded-2xl font-display font-black text-sm text-white shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer ${
-                    currentCardVote === 'yes'
-                      ? 'bg-emerald-600 border border-emerald-300 shadow-[0_0_25px_rgba(16,185,129,0.5)] scale-[1.02]'
-                      : 'bg-gradient-to-r from-emerald-600 via-teal-500 to-emerald-600 hover:brightness-110 shadow-[0_0_20px_rgba(16,185,129,0.35)]'
-                  }`}
-                >
-                  <ThumbsUp className="w-5 h-5" />
-                  <span>{currentCardVote === 'yes' ? '¡VOTADO SÍ! ✓' : '¡VOTAR A FAVOR!'}</span>
-                </button>
-              </div>
-
-              {/* Carousel Navigation Bottom Controls */}
-              <div className="flex items-center justify-between pt-1 text-xs">
-                <button
-                  type="button"
-                  onClick={() => setMassiveIndex((prev) => Math.max(0, prev - 1))}
-                  disabled={massiveIndex === 0}
-                  className="px-3 py-2 rounded-xl bg-surface-raised border border-halloween-border hover:text-white text-gray-400 disabled:opacity-30 flex items-center gap-1 cursor-pointer"
-                >
-                  <ChevronLeft className="w-4 h-4" />
-                  <span>Anterior</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setShowQuickGrid(true)}
-                  className="px-3 py-2 rounded-xl bg-surface-raised border border-halloween-border text-halloween-lavender hover:text-white flex items-center gap-1.5 cursor-pointer text-[11px]"
-                >
-                  <Grid className="w-3.5 h-3.5" />
-                  <span>Ver todos ({totalMassive})</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setMassiveIndex((prev) => Math.min(totalMassive - 1, prev + 1))}
-                  disabled={massiveIndex >= totalMassive - 1}
-                  className="px-3 py-2 rounded-xl bg-surface-raised border border-halloween-border hover:text-white text-gray-400 disabled:opacity-30 flex items-center gap-1 cursor-pointer"
-                >
-                  <span>Siguiente</span>
-                  <ChevronRight className="w-4 h-4" />
-                </button>
-              </div>
-
-              {/* Finish Summary Box if reviewed all */}
-              {reviewedCount === totalMassive && (
-                <div className="p-4 rounded-2xl bg-gradient-to-r from-purple-950/70 via-emerald-950/50 to-purple-950/70 border border-emerald-500/50 text-center space-y-1.5 animate-fade-in mt-2">
-                  <span className="text-xs font-bold text-emerald-300 block">
-                    🎉 ¡Has revisado todos los disfraces!
-                  </span>
-                  <p className="text-[11px] text-gray-300">
-                    Has emitido <strong>{yesCount} votos a favor</strong>. Puedes cambiar cualquier decisión volviendo a los disfraces mientras la votación masiva siga abierta.
-                  </p>
-                </div>
-              )}
+                );
+              })}
             </div>
           ) : (
             <div className="glass-panel p-8 rounded-3xl border border-halloween-border text-center space-y-3">
-              <Sparkles className="w-10 h-10 text-halloween-orange mx-auto animate-spin-slow" />
-              <h2 className="font-display font-black text-lg text-white">
-                Cargando participantes...
-              </h2>
+              <Search className="w-8 h-8 text-gray-500 mx-auto" />
+              <h3 className="font-display font-bold text-base text-white">
+                No se encontraron disfraces
+              </h3>
+              <p className="text-xs text-halloween-muted">
+                Intenta con otro término de búsqueda o cambia el filtro de categoría.
+              </p>
+              <button
+                type="button"
+                onClick={() => { setMassiveSearch(''); setMassiveCategoryFilter('all'); }}
+                className="px-4 py-2 rounded-xl bg-surface-raised border border-halloween-border text-xs text-white hover:border-halloween-orange cursor-pointer"
+              >
+                Ver todos los disfraces
+              </button>
             </div>
           )}
         </main>
 
-        {/* Quick Grid Modal / Bottom Sheet */}
-        {showQuickGrid && (
-          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 animate-fade-in">
-            <div className="w-full max-w-lg bg-[#0A0D1B] rounded-t-3xl sm:rounded-3xl border border-halloween-border p-5 space-y-4 max-h-[85vh] flex flex-col shadow-2xl">
-              <div className="flex items-center justify-between border-b border-halloween-border/60 pb-3">
-                <div>
-                  <h3 className="font-display font-black text-base text-white">
-                    Todos los Disfraces ({totalMassive})
-                  </h3>
-                  <span className="text-[11px] text-halloween-muted">
-                    Toca cualquier número para calificarlo o modificar tu voto
-                  </span>
-                </div>
-                <button
-                  onClick={() => setShowQuickGrid(false)}
-                  className="p-1.5 rounded-lg bg-surface-raised border border-halloween-border text-gray-400 hover:text-white cursor-pointer"
-                >
-                  ✕
-                </button>
-              </div>
-
-              {/* Grid of participants */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 overflow-y-auto pr-1 flex-1">
-                {massiveList.map((p, idx) => {
-                  const vote = massiveVotes[p.id];
-                  return (
-                    <button
-                      key={p.id}
-                      type="button"
-                      onClick={() => {
-                        setMassiveIndex(idx);
-                        setShowQuickGrid(false);
-                      }}
-                      className={`p-2 rounded-xl border text-left flex items-center gap-2 transition-all cursor-pointer ${
-                        vote === 'yes'
-                          ? 'bg-emerald-950/40 border-emerald-500/70 text-emerald-200'
-                          : vote === 'no'
-                          ? 'bg-surface-raised border-halloween-border text-gray-400'
-                          : 'bg-purple-950/30 border-purple-800/40 text-gray-300'
-                      }`}
-                    >
-                      <img
-                        src={p.photo_thumbnail_key || p.photo_original_key}
-                        alt=""
-                        className="w-10 h-10 rounded-lg object-cover flex-shrink-0 bg-black/50"
-                      />
-                      <div className="truncate flex-1">
-                        <span className="font-mono font-bold text-xs block text-white">
-                          #{String(p.contest_number).padStart(2, '0')}
-                        </span>
-                        <strong className="text-[11px] truncate block text-gray-200">
-                          {p.costume_title}
-                        </strong>
-                        <span className="text-[9px] block">
-                          {vote === 'yes' ? '💚 Votado Sí' : vote === 'no' ? '⚪ Pasado' : '⏳ Pendiente'}
-                        </span>
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-
-              <div className="pt-2 border-t border-halloween-border/60 flex items-center justify-between text-xs">
-                <span className="text-gray-400">
-                  Total: <strong className="text-emerald-400">{yesCount} SÍ</strong> / {totalMassive}
+        {/* Modal Quick Preview on Image Click */}
+        {selectedPreview && (
+          <div className="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-4 animate-fade-in">
+            <div className="w-full max-w-sm bg-[#0A0D1B] rounded-3xl border border-halloween-border overflow-hidden shadow-2xl flex flex-col space-y-4 p-4">
+              <div className="flex items-center justify-between border-b border-halloween-border/60 pb-2">
+                <span className="px-2.5 py-0.5 rounded-lg bg-halloween-orange text-black font-mono font-black text-xs">
+                  #{String(selectedPreview.contest_number).padStart(2, '0')}
+                </span>
+                <span className="text-xs text-gray-300 font-semibold truncate max-w-[200px]">
+                  {selectedPreview.costume_title}
                 </span>
                 <button
                   type="button"
-                  onClick={() => setShowQuickGrid(false)}
-                  className="px-4 py-2 rounded-xl bg-halloween-orange text-black font-bold cursor-pointer"
+                  onClick={() => setSelectedPreview(null)}
+                  className="p-1.5 rounded-lg bg-surface-raised border border-halloween-border text-gray-400 hover:text-white cursor-pointer"
                 >
-                  Listo
+                  <X className="w-4 h-4" />
                 </button>
               </div>
+
+              {/* Large Image */}
+              <div className="relative aspect-square w-full rounded-2xl overflow-hidden bg-[#080A12] flex items-center justify-center border border-halloween-border/60">
+                <img
+                  src={selectedPreview.photo_thumbnail_key || selectedPreview.photo_original_key}
+                  alt=""
+                  aria-hidden="true"
+                  className="absolute inset-0 w-full h-full object-cover blur-xl opacity-40"
+                />
+                <img
+                  src={selectedPreview.photo_original_key}
+                  alt={selectedPreview.costume_title}
+                  className="relative z-10 max-h-full max-w-full object-contain p-2"
+                />
+              </div>
+
+              <div className="space-y-1 text-center">
+                <h3 className="font-display font-black text-lg text-white">
+                  {selectedPreview.costume_title}
+                </h3>
+                <p className="text-xs text-halloween-lavender">
+                  Participante: <strong>{selectedPreview.public_display_name}</strong>
+                </p>
+                {selectedPreview.description && (
+                  <p className="text-xs text-gray-300 italic pt-1 max-h-20 overflow-y-auto">
+                    "{selectedPreview.description}"
+                  </p>
+                )}
+              </div>
+
+              {/* Action Button inside modal */}
+              <button
+                type="button"
+                onClick={() => {
+                  handleToggleMassiveVote(selectedPreview.id);
+                }}
+                className={`w-full py-3.5 rounded-2xl font-display font-black text-sm transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                  massiveVotes[selectedPreview.id] === 'yes'
+                    ? 'bg-emerald-600 text-white shadow-lg border border-emerald-300'
+                    : 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md'
+                }`}
+              >
+                {massiveVotes[selectedPreview.id] === 'yes' ? (
+                  <>
+                    <CheckCircle2 className="w-5 h-5" />
+                    <span>¡YA TIENE TU VOTO A FAVOR! (Toca para quitar)</span>
+                  </>
+                ) : (
+                  <>
+                    <ThumbsUp className="w-5 h-5" />
+                    <span>¡VOTAR A FAVOR DE ESTE DISFRAZ!</span>
+                  </>
+                )}
+              </button>
             </div>
           </div>
         )}
 
         {/* Reaction Bar Footer */}
-        <footer className="p-3 border-t border-halloween-border/60 bg-[#0A0D1B]/95 backdrop-blur-md sticky bottom-0 z-30">
-          <div className="flex items-center justify-between mb-2 px-1">
+        <footer className="p-3 border-t border-halloween-border/60 bg-[#0A0D1B]/95 backdrop-blur-md fixed bottom-0 inset-x-0 z-30 max-w-4xl mx-auto">
+          <div className="flex items-center justify-between mb-1.5 px-1">
             <span className="text-[10px] text-halloween-muted font-bold uppercase tracking-wider flex items-center gap-1">
               <Sparkles className="w-3 h-3 text-halloween-orange" />
-              <span>REACCIONES EN VIVO A LA PANTALLA GIGANTE</span>
+              <span>REACCIONES EN VIVO AL AUDITORIO</span>
             </span>
             <span className="text-[10px] text-halloween-orange font-bold">¡Toca un emoji!</span>
           </div>
@@ -801,7 +815,7 @@ export const LiveVoter: React.FC = () => {
               <button
                 key={item.emoji}
                 onClick={() => handleSendReaction(item.emoji)}
-                className="py-3 rounded-2xl bg-surface-raised border border-halloween-border hover:border-halloween-orange text-2xl sm:text-3xl active:scale-75 hover:scale-110 transition-all flex items-center justify-center shadow-sm cursor-pointer hover:bg-halloween-orange/10"
+                className="py-2.5 rounded-xl bg-surface-raised border border-halloween-border hover:border-halloween-orange text-2xl active:scale-75 transition-all flex items-center justify-center shadow-sm cursor-pointer hover:bg-halloween-orange/10"
                 title={item.label}
                 type="button"
               >
