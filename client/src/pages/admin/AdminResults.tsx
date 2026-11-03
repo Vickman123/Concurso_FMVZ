@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { Trophy, Eye, EyeOff, BarChart3, RefreshCw, AlertCircle } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { getApiUrl } from '../../services/api';
@@ -73,6 +74,14 @@ export const AdminResults: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-3">
+          <Link
+            to="/admin/computo-final"
+            className="px-4 py-2 rounded-xl text-xs font-bold bg-gradient-to-r from-purple-600 to-indigo-600 hover:brightness-110 text-white flex items-center gap-1.5 shadow-sm"
+          >
+            <Trophy className="w-4 h-4 text-amber-300" />
+            <span>Ver Comparativa y Ganadores</span>
+          </Link>
+
           <button
             onClick={fetchResults}
             className="p-2 rounded-xl bg-surface-card hover:bg-surface-raised text-gray-300 hover:text-white border border-halloween-border"

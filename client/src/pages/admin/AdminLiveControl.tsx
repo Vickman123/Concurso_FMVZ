@@ -20,6 +20,7 @@ import {
   ArrowUpDown,
   CheckCircle2,
   BarChart3,
+  Trophy,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { getApiUrl, getEventSourceUrl } from '../../services/api';
@@ -289,6 +290,15 @@ export const AdminLiveControl: React.FC = () => {
           >
             <span>Abrir Pantalla de Proyección</span>
             <ExternalLink className="w-4 h-4" />
+          </a>
+
+          {/* Link to Final Comparison */}
+          <a
+            href="/admin/computo-final"
+            className="px-4 py-2.5 rounded-xl font-bold text-xs text-white bg-gradient-to-r from-purple-600 to-indigo-600 hover:brightness-110 shadow-glow-purple flex items-center gap-2 transition-all cursor-pointer"
+          >
+            <Trophy className="w-4 h-4 text-amber-300" />
+            <span>Cómputo Final y Podio</span>
           </a>
         </div>
       </div>

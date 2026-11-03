@@ -131,7 +131,7 @@ export async function initDb(): Promise<void> {
 
       const poolMax = parseInt(process.env.DB_POOL_MAX || '25', 10);
       const poolIdleTimeout = parseInt(process.env.DB_IDLE_TIMEOUT || '30000', 10);
-      const poolConnectTimeout = parseInt(process.env.DB_CONNECT_TIMEOUT || '5000', 10);
+      const poolConnectTimeout = parseInt(process.env.DB_CONNECT_TIMEOUT || '15000', 10);
 
       console.log(`[DB] Pool Config: max=${poolMax}, idleTimeout=${poolIdleTimeout}ms, ssl=${isSsl}`);
 

@@ -36,6 +36,7 @@ import { AdminResults } from './pages/admin/AdminResults';
 import { AdminSettings } from './pages/admin/AdminSettings';
 import { AdminAudit } from './pages/admin/AdminAudit';
 import { AdminLiveControl } from './pages/admin/AdminLiveControl';
+import { AdminFinalComparison } from './pages/admin/AdminFinalComparison';
 
 // Protected Route Guard for Admin
 const ProtectedAdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -107,6 +108,7 @@ const AppContent: React.FC = () => {
             <Route path="fotografias" element={<AdminPhotos />} />
             <Route path="votos" element={<AdminVotes />} />
             <Route path="resultados" element={<AdminResults />} />
+            <Route path="computo-final" element={<AdminFinalComparison />} />
             <Route path="premios" element={<Navigate to="/admin" replace />} />
             <Route path="configuracion" element={<AdminSettings />} />
             <Route path="auditoria" element={<AdminAudit />} />

@@ -11,7 +11,8 @@ import {
   ExternalLink,
   Shield,
   BarChart3,
-  Radio
+  Radio,
+  Trophy
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
@@ -32,6 +33,7 @@ export const AdminLayout: React.FC = () => {
     { label: 'Fotografías', path: '/admin/fotografias', icon: Camera },
     { label: 'Votos', path: '/admin/votos', icon: Heart },
     { label: 'Resultados', path: '/admin/resultados', icon: BarChart3 },
+    { label: 'Cómputo Final', path: '/admin/computo-final', icon: Trophy },
     { label: 'Configuración & QR', path: '/admin/configuracion', icon: Sliders },
     { label: 'Auditoría', path: '/admin/auditoria', icon: FileText },
   ];

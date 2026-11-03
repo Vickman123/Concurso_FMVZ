@@ -509,32 +509,87 @@ export async function exportVotesCsv(req: Request, res: Response): Promise<void>
 export async function getAdminResults(req: Request, res: Response): Promise<void> {
   try {
     const db = await getDb();
-    const tallyRes = await db.query(`
-      SELECT 
-        p.id,
-        p.contest_number,
-        p.public_display_name,
-        p.costume_title,
-        p.photo_original_key,
-        p.participant_type,
-        p.status,
-        (
-          COALESCE((SELECT COUNT(*) FROM votes v WHERE v.participant_id = p.id AND v.status = 'valid'), 0) +
-          COALESCE((SELECT COUNT(*) FROM live_votes lv WHERE lv.participant_id = p.id AND lv.vote_value = 'yes'), 0)
-        ) as total_votes,
-        COALESCE((SELECT COUNT(*) FROM votes v WHERE v.participant_id = p.id AND v.status = 'valid'), 0) as web_votes,
-        COALESCE((SELECT COUNT(*) FROM live_votes lv WHERE lv.participant_id = p.id AND lv.vote_value = 'yes'), 0) as live_votes,
-        COALESCE((SELECT COUNT(*) FROM live_votes lv WHERE lv.participant_id = p.id AND lv.vote_value = 'no'), 0) as passed_votes
-      FROM participants p
-      WHERE p.status = 'approved'
-      ORDER BY total_votes DESC, p.contest_number ASC
-    `);
+    let tallyRes: any;
+    try {
+      tallyRes = await db.query(`
+        SELECT 
+          p.id,
+          p.contest_number,
+          p.full_name,
+          p.public_display_name,
+          p.costume_title,
+          p.description,
+          p.photo_original_key,
+          p.photo_thumbnail_key,
+          p.participant_type,
+          p.status,
+          COALESCE((SELECT COUNT(*) FROM live_votes lv WHERE lv.participant_id = p.id AND lv.vote_value = 'yes'), 0) as live_stage_votes,
+          COALESCE((SELECT COUNT(*) FROM live_massive_votes lmv WHERE lmv.participant_id = p.id AND lmv.vote_value = 'yes'), 0) as massive_votes,
+          (
+            COALESCE((SELECT COUNT(*) FROM live_votes lv WHERE lv.participant_id = p.id AND lv.vote_value = 'yes'), 0) +
+            COALESCE((SELECT COUNT(*) FROM live_massive_votes lmv WHERE lmv.participant_id = p.id AND lmv.vote_value = 'yes'), 0)
+          ) as total_live_combined,
+          COALESCE((SELECT COUNT(*) FROM votes v WHERE v.participant_id = p.id AND v.status = 'valid'), 0) as web_votes,
+          (
+            COALESCE((SELECT COUNT(*) FROM live_votes lv WHERE lv.participant_id = p.id AND lv.vote_value = 'yes'), 0) +
+            COALESCE((SELECT COUNT(*) FROM live_massive_votes lmv WHERE lmv.participant_id = p.id AND lmv.vote_value = 'yes'), 0) +
+            COALESCE((SELECT COUNT(*) FROM votes v WHERE v.participant_id = p.id AND v.status = 'valid'), 0)
+          ) as total_votes,
+          COALESCE((SELECT COUNT(*) FROM live_votes lv WHERE lv.participant_id = p.id AND lv.vote_value = 'no'), 0) as passed_votes
+        FROM participants p
+        WHERE p.status = 'approved'
+        ORDER BY total_live_combined DESC, total_votes DESC, p.contest_number ASC
+      `);
+    } catch {
+      // Fallback if live_massive_votes table does not exist
+      tallyRes = await db.query(`
+        SELECT 
+          p.id,
+          p.contest_number,
+          p.full_name,
+          p.public_display_name,
+          p.costume_title,
+          p.description,
+          p.photo_original_key,
+          p.photo_thumbnail_key,
+          p.participant_type,
+          p.status,
+          COALESCE((SELECT COUNT(*) FROM live_votes lv WHERE lv.participant_id = p.id AND lv.vote_value = 'yes'), 0) as live_stage_votes,
+          0 as massive_votes,
+          COALESCE((SELECT COUNT(*) FROM live_votes lv WHERE lv.participant_id = p.id AND lv.vote_value = 'yes'), 0) as total_live_combined,
+          COALESCE((SELECT COUNT(*) FROM votes v WHERE v.participant_id = p.id AND v.status = 'valid'), 0) as web_votes,
+          (
+            COALESCE((SELECT COUNT(*) FROM live_votes lv WHERE lv.participant_id = p.id AND lv.vote_value = 'yes'), 0) +
+            COALESCE((SELECT COUNT(*) FROM votes v WHERE v.participant_id = p.id AND v.status = 'valid'), 0)
+          ) as total_votes,
+          COALESCE((SELECT COUNT(*) FROM live_votes lv WHERE lv.participant_id = p.id AND lv.vote_value = 'no'), 0) as passed_votes
+        FROM participants p
+        WHERE p.status = 'approved'
+        ORDER BY total_live_combined DESC, total_votes DESC, p.contest_number ASC
+      `);
+    }
+
+    // Get total cheers / reactions from live session
+    let totalCheers = 0;
+    try {
+      const sessionRes = await db.query('SELECT total_cheers FROM live_stage_session WHERE id = 1');
+      totalCheers = parseInt(sessionRes.rows[0]?.total_cheers || '0', 10);
+    } catch {}
 
     const settingsRes = await db.query('SELECT results_publication_status, voting_status FROM contest_settings WHERE id = 1');
     const settings = settingsRes.rows[0] || {};
 
     res.json({
-      results: tallyRes.rows,
+      results: tallyRes.rows.map((r: any) => ({
+        ...r,
+        live_stage_votes: parseInt(r.live_stage_votes || '0', 10),
+        massive_votes: parseInt(r.massive_votes || '0', 10),
+        total_live_combined: parseInt(r.total_live_combined || '0', 10),
+        web_votes: parseInt(r.web_votes || '0', 10),
+        total_votes: parseInt(r.total_votes || '0', 10),
+        passed_votes: parseInt(r.passed_votes || '0', 10),
+      })),
+      total_cheers: totalCheers,
       results_publication_status: settings.results_publication_status,
       voting_status: settings.voting_status,
     });
